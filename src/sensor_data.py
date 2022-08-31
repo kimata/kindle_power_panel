@@ -100,12 +100,13 @@ if __name__ == "__main__":
     hostname = "テレビ"
     param = "power"
     threshold = 16
-    period = "1h"
+    now = datetime.datetime.now()
+    period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
     logging.info(
         "data = {data}".format(
             data=json.dumps(
-                fetch_data(config["INFLUXDB"], sensor_type, hostname, param, period),
+                fetch_data(config["INFLUXDB"], sensor_type, hostname, param),
                 sort_keys=True,
                 indent=2,
                 default=str,
