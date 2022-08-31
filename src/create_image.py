@@ -19,7 +19,9 @@ logging.info("start to create image")
 
 config = load_config()
 
-usage_panel_img = draw_usage_panel(config["USAGE"], config["INFLUXDB"], config["FONT"])
+usage_panel_img = draw_usage_panel(
+    config["USAGE"], config["INFLUXDB"], config["FONT"], config["ICON"]
+)
 sensor_graph_img = draw_sensor_graph(
     config["GRAPH"], config["INFLUXDB"], config["FONT"]
 )

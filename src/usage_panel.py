@@ -12,6 +12,14 @@ import datetime
 from sensor_data import get_on_minutes
 
 
+def open_icon(config, name):
+    return PIL.Image.open(
+        str(
+            pathlib.Path(os.path.dirname(__file__), config["PATH"], config["MAP"][name])
+        )
+    )
+
+
 def get_font(config, font_type, size):
     return PIL.ImageFont.truetype(
         str(
@@ -33,6 +41,12 @@ def get_face_map(font_config):
     }
 
 
+def draw_icon(img, config, name, pos_x, pos_y, w=128, h=128):
+    icon = open_icon(config, name).resize((w, h))
+
+    img.paste(icon, (pos_x, pos_y))
+
+
 def draw_text(img, text, pos, font, align="left", color="#000"):
     draw = PIL.ImageDraw.Draw(img)
 
@@ -46,7 +60,7 @@ def draw_text(img, text, pos, font, align="left", color="#000"):
     return font.getsize(text)[0]
 
 
-def draw_usage(img, panel_config, db_config, face):
+def draw_usage(img, panel_config, db_config, icon_config, face):
     now = datetime.datetime.now()
     period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
     on_minutes = get_on_minutes(
@@ -114,8 +128,12 @@ def draw_usage(img, panel_config, db_config, face):
         color="#000",
     )
 
+    draw_icon(img, icon_config, "TV", 130, 160)
+    for i in range(3):
+        draw_icon(img, icon_config, "AIRCON", 130, 340 * i + 500)
 
-def draw_usage_panel(panel_config, db_config, font_config):
+
+def draw_usage_panel(panel_config, db_config, font_config, icon_config):
     logging.info("draw usage panel")
 
     img = PIL.Image.new(
@@ -123,6 +141,6 @@ def draw_usage_panel(panel_config, db_config, font_config):
     )
     face_map = get_face_map(font_config)
 
-    draw_usage(img, panel_config, db_config, face_map["usage"])
+    draw_usage(img, panel_config, db_config, icon_config, face_map["usage"])
 
     return img

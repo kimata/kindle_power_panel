@@ -101,13 +101,12 @@ def plot_item(
     else:
         font = face_map["value"]
 
-    ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(3))
-
     ax.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 24, 6)))
     ax.xaxis.set_minor_formatter(mdates.DateFormatter("\n%-H"))
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%-d日"))
 
+    ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(3))
     ax.yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter("{x:,.0f}"))
 
     for label in ax.get_xticklabels():
