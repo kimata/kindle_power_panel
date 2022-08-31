@@ -35,7 +35,7 @@ def get_face_map(font_config):
     return {
         "usage": {
             "label": get_font(font_config, "JP_REGULAR", 40),
-            "value": get_font(font_config, "JP_BOLD", 120),
+            "value": get_font(font_config, "EN_HEAVY", 160),
             "unit": get_font(font_config, "JP_REGULAR", 50),
         },
     }
@@ -73,7 +73,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
     )
     label = "本日"
 
-    x = 1025
+    x = 995
     y = 200
 
     unit_dy = face["value"].getsize("0")[1] - face["unit"].getsize("0")[1]

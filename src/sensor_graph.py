@@ -36,9 +36,9 @@ def get_plot_font(config, font_type, size):
 def get_face_map(font_config):
     return {
         "title": get_plot_font(font_config, "JP_BOLD", 60),
-        "value": get_plot_font(font_config, "EN_COND_BOLD", 100),
+        "value": get_plot_font(font_config, "EN_MEDIUM", 100),
         "value_small": get_plot_font(font_config, "EN_COND_BOLD", 80),
-        "value_unit": get_plot_font(font_config, "JP_REGULAR", 30),
+        "value_unit": get_plot_font(font_config, "EN_MEDIUM", 30),
         "yaxis_major": get_plot_font(font_config, "JP_REGULAR", 30),
         "yaxis_minor": get_plot_font(font_config, "JP_REGULAR", 24),
         "xaxis": get_plot_font(font_config, "JP_REGULAR", 16),
