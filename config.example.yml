@@ -4,7 +4,7 @@ PANEL:
     HEIGHT: 1448
   UPDATE:
     INTERVAL: 120
-    
+
 INFLUXDB:
   URL: http://proxy.green-rabbit.net:8086
   TOKEN: dummy
@@ -37,7 +37,7 @@ GRAPH:
       TYPE: hems.sharp
     - HOST: 書斎エアコン
       TYPE: hems.sharp
-        
+
   PARAM:
     NAME: power
     FORMAT: '{:.0f}'
@@ -47,6 +47,12 @@ GRAPH:
       - 1500
     PERIOD: '48h'
     SIZE_SMALL: False
+
+ICON:
+  PATH: ../icon/ # スクリプトのフォルダからの相対パス
+  MAP:
+    TV: tv.png
+    AIRCON: aircon.png
 
 FONT:
   PATH: ../font/ # スクリプトのフォルダからの相対パス
