@@ -1,0 +1,63 @@
+PANEL:
+  DEVICE:
+    WIDTH: 1072
+    HEIGHT: 1448
+  UPDATE:
+    INTERVAL: 120
+    
+INFLUXDB:
+  URL: http://proxy.green-rabbit.net:8086
+  TOKEN: dummy
+  ORG: home
+  BUCKET: sensor
+
+USAGE:
+  WIDTH: 1072
+  HEIGHT: 400
+  TARGET:
+    HOST: テレビ
+    TYPE: hems.sharp
+    PARAM: power
+    THRESHOLD: 20
+
+GRAPH:
+  WIDTH: 1072
+  HEIGHT: 1418
+  OFFSET: 30
+  EQUIP_LIST:
+    - HOST: テレビ
+      TYPE: hems.sharp
+      RANGE:
+        - 0
+        - 150
+      SHOW_VALUE: False
+    - HOST: リビングエアコン
+      TYPE: hems.sharp
+    - HOST: 和室エアコン
+      TYPE: hems.sharp
+    - HOST: 書斎エアコン
+      TYPE: hems.sharp
+        
+  PARAM:
+    NAME: power
+    FORMAT: '{:.0f}'
+    UNIT: 'W'
+    RANGE:
+      - 0
+      - 1500
+    PERIOD: '48h'
+    SIZE_SMALL: False
+
+FONT:
+  PATH: ../font/ # スクリプトのフォルダからの相対パス
+  MAP:
+    JP_REGULAR: A-OTF-ShinGoPro-Regular.otf
+    JP_MEDIUM: A-OTF-ShinGoPro-Medium.otf
+    JP_BOLD: A-OTF-ShinGoPro-Bold.otf
+    EN_COND_BOLD: FuturaStd-CondensedBold.otf
+    EN_COND: FuturaStd-Condensed.otf
+    EN_MEDIUM: FuturaStd-Medium.otf
+    EN_BOLD: FuturaStd-Bold.otf
+
+LIVENESS:
+  FILE: /dev/shm/healthz
