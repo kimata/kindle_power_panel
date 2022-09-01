@@ -38,6 +38,9 @@ def get_face_map(font_config):
             "value": get_font(font_config, "EN_HEAVY", 160),
             "unit": get_font(font_config, "JP_REGULAR", 50),
         },
+        "date": {
+            "value": get_font(font_config, "EN_MEDIUM", 40),
+        },
     }
 
 
@@ -91,7 +94,9 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         x -= (
             draw_text(
                 img,
-                "{minute:02d}".format(minute=on_minutes % 60),
+                "0"
+                if on_minutes == 0
+                else "{minute:02d}".format(minute=on_minutes % 60),
                 [x, y],
                 face["value"],
                 "right",
@@ -133,6 +138,19 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         draw_icon(img, icon_config, "AIRCON", 130, 340 * i + 500)
 
 
+def draw_datetime(img, panel_config, face):
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9), "JST"))
+
+    draw_text(
+        img,
+        now.strftime("%Y/%-m/%-d %H:%M"),
+        [panel_config["WIDTH"] - 20, 10],
+        face["value"],
+        "right",
+        color="#333",
+    )
+
+
 def draw_usage_panel(panel_config, db_config, font_config, icon_config):
     logging.info("draw usage panel")
 
@@ -142,5 +160,6 @@ def draw_usage_panel(panel_config, db_config, font_config, icon_config):
     face_map = get_face_map(font_config)
 
     draw_usage(img, panel_config, db_config, icon_config, face_map["usage"])
+    draw_datetime(img, panel_config, face_map["date"])
 
     return img
