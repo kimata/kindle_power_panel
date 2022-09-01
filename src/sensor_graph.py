@@ -40,7 +40,7 @@ def get_face_map(font_config):
         "value_small": get_plot_font(font_config, "EN_COND_BOLD", 80),
         "value_unit": get_plot_font(font_config, "EN_MEDIUM", 30),
         "xaxis_major": get_plot_font(font_config, "JP_REGULAR", 30),
-        "xaxis_minor": get_plot_font(font_config, "JP_REGULAR", 24),
+        "xaxis_minor": get_plot_font(font_config, "EN_MEDIUM", 24),
         "yaxis": get_plot_font(font_config, "EN_MEDIUM", 16),
     }
 
