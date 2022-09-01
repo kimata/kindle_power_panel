@@ -40,7 +40,7 @@ GRAPH:
 
   PARAM:
     NAME: power
-    FORMAT: '{:.0f}'
+    FORMAT: '{:,.0f}'
     UNIT: 'W'
     RANGE:
       - 0
