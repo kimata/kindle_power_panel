@@ -39,9 +39,9 @@ def get_face_map(font_config):
         "value": get_plot_font(font_config, "EN_MEDIUM", 100),
         "value_small": get_plot_font(font_config, "EN_COND_BOLD", 80),
         "value_unit": get_plot_font(font_config, "EN_MEDIUM", 30),
-        "yaxis_major": get_plot_font(font_config, "JP_REGULAR", 30),
-        "yaxis_minor": get_plot_font(font_config, "JP_REGULAR", 24),
-        "xaxis": get_plot_font(font_config, "JP_REGULAR", 16),
+        "xaxis_major": get_plot_font(font_config, "JP_REGULAR", 30),
+        "xaxis_minor": get_plot_font(font_config, "JP_REGULAR", 24),
+        "yaxis": get_plot_font(font_config, "EN_MEDIUM", 16),
     }
 
 
@@ -110,12 +110,12 @@ def plot_item(
     ax.yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter("{x:,.0f}"))
 
     for label in ax.get_xticklabels():
-        label.set_fontproperties(face_map["yaxis_major"])
+        label.set_fontproperties(face_map["xaxis_major"])
     for label in ax.get_xminorticklabels():
-        label.set_fontproperties(face_map["yaxis_minor"])
+        label.set_fontproperties(face_map["xaxis_minor"])
 
     for label in ax.get_yticklabels():
-        label.set_fontproperties(face_map["xaxis"])
+        label.set_fontproperties(face_map["yaxis"])
 
     # ax.set_ylabel(unit, fontproperties=face_map["axis_major"])
 
