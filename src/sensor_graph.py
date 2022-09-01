@@ -119,7 +119,9 @@ def plot_item(
 
     # ax.set_ylabel(unit, fontproperties=face_map["axis_major"])
 
-    ax.grid(axis="x", color="#000000", alpha=0.1, linestyle="-", linewidth=1)
+    ax.grid(
+        axis="x", color="#000000", alpha=0.1, linestyle="-", which="both", linewidth=1
+    )
     ax.grid(axis="y", color="#000000", alpha=0.1, linestyle="-", linewidth=1)
 
     if is_show_value:
