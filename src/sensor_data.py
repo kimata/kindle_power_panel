@@ -96,17 +96,17 @@ if __name__ == "__main__":
 
     config = load_config()
 
-    sensor_type = "hems.sharp"
-    hostname = "テレビ"
-    param = "power"
-    threshold = 16
     now = datetime.datetime.now()
+    sensor_type = config["USAGE"]["TARGET"]["TYPE"]
+    hostname = config["USAGE"]["TARGET"]["HOST"]
+    param = config["USAGE"]["TARGET"]["PARAM"]
+    threshold = config["USAGE"]["TARGET"]["THRESHOLD"]
     period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
     logging.info(
         "data = {data}".format(
             data=json.dumps(
-                fetch_data(config["INFLUXDB"], sensor_type, hostname, param),
+                fetch_data(config["INFLUXDB"], sensor_type, hostname, param, period),
                 sort_keys=True,
                 indent=2,
                 default=str,
