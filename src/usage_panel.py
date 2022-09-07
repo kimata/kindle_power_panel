@@ -74,6 +74,8 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         panel_config["TARGET"]["THRESHOLD"],
         period,
     )
+    logging.info("today usage: {minute} min".format(minute=on_minutes))
+
     label = "本日"
 
     x = 995
