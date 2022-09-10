@@ -102,7 +102,7 @@ if __name__ == "__main__":
     hostname = config["USAGE"]["TARGET"]["HOST"]
     param = config["USAGE"]["TARGET"]["PARAM"]
     threshold = config["USAGE"]["TARGET"]["THRESHOLD"]
-    period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
+    period = config["GRAPH"]["PARAM"]["PERIOD"]
 
     logging.info(
         "data = {data}".format(
@@ -114,6 +114,7 @@ if __name__ == "__main__":
             )
         )
     )
+    period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
     logging.info(
         "ON minutes (for {period}) = {minutes} min".format(
