@@ -30,6 +30,7 @@ def fetch_data_impl(config, sensor_type, hostname, param, period, window="10m"):
             period=period,
             window=window,
         )
+        logging.debug("Flux query = {query}".format(query=query))
         client = influxdb_client.InfluxDBClient(
             url=config["URL"], token=token, org=config["ORG"]
         )
@@ -92,7 +93,7 @@ if __name__ == "__main__":
 
     from config import load_config
 
-    logger.init("test")
+    logger.init("test", logging.DEBUG)
 
     config = load_config()
 
