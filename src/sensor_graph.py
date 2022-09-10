@@ -177,6 +177,7 @@ def draw_sensor_graph(graph_config, db_config, font_config):
         )
         if not data["valid"]:
             continue
+
         if data["time"][0] < time_begin:
             time_begin = data["time"][0]
         if cache is None:
@@ -185,7 +186,6 @@ def draw_sensor_graph(graph_config, db_config, font_config):
                 "value": [-100.0 for x in range(len(data["time"]))],
                 "valid": False,
             }
-            break
 
     for row in range(0, len(equip_list)):
         data = fetch_data(
