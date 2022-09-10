@@ -18,7 +18,9 @@ USAGE:
     HOST: テレビ
     TYPE: hems.sharp
     PARAM: power
-    THRESHOLD: 20
+    THRESHOLD:
+      WAKE: 20
+      WORK: 60
 
 GRAPH:
   WIDTH: 1072
