@@ -34,9 +34,16 @@ def get_font(config, font_type, size):
 def get_face_map(font_config):
     return {
         "usage": {
-            "label": get_font(font_config, "JP_REGULAR", 40),
-            "value": get_font(font_config, "EN_HEAVY", 160),
-            "unit": get_font(font_config, "JP_REGULAR", 50),
+            "work": {
+                "label": get_font(font_config, "JP_REGULAR", 50),
+                "value": get_font(font_config, "EN_HEAVY", 160),
+                "unit": get_font(font_config, "JP_REGULAR", 60),
+            },
+            "leave": {
+                "label": get_font(font_config, "JP_REGULAR", 40),
+                "value": get_font(font_config, "JP_REGULAR", 40),
+                "unit": get_font(font_config, "JP_REGULAR", 30),
+            },
         },
         "date": {
             "value": get_font(font_config, "EN_MEDIUM", 40),
@@ -63,28 +70,21 @@ def draw_text(img, text, pos, font, align="left", color="#000"):
     return font.getsize(text)[0]
 
 
-def draw_usage(img, panel_config, db_config, icon_config, face):
-    now = datetime.datetime.now()
-    period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
-    on_minutes = get_on_minutes(
-        db_config,
-        panel_config["TARGET"]["TYPE"],
-        panel_config["TARGET"]["HOST"],
-        panel_config["TARGET"]["PARAM"],
-        panel_config["TARGET"]["THRESHOLD"],
-        period,
-    )
-    logging.info("today usage: {minute} min".format(minute=on_minutes))
+def draw_time(img, x, y, label, minutes, suffix, face):
+    value_height = face["value"].getsize("0")[1]
+    unit_dy = value_height - face["unit"].getsize("0")[1]
+    label_dy = value_height - face["label"].getsize("0")[1]
 
-    label = "本日"
-
-    x = 995
-    y = 200
-
-    unit_dy = face["value"].getsize("0")[1] - face["unit"].getsize("0")[1]
-    label_dy = face["value"].getsize("0")[1] - face["label"].getsize("0")[1]
-
-    if (on_minutes == 0) or (on_minutes % 60) != 0:
+    if suffix is not None:
+        x -= draw_text(
+            img,
+            suffix,
+            [x, y + label_dy],
+            face["label"],
+            "right",
+            color="#000",
+        )
+    if (minutes == 0) or (minutes % 60) != 0:
         x -= draw_text(
             img,
             "分",
@@ -96,9 +96,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         x -= (
             draw_text(
                 img,
-                "0"
-                if on_minutes == 0
-                else "{minute:02d}".format(minute=on_minutes % 60),
+                "0" if minutes == 0 else "{minute:02d}".format(minute=minutes % 60),
                 [x, y],
                 face["value"],
                 "right",
@@ -106,7 +104,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
             )
             + 10
         )
-    if on_minutes >= 60:
+    if minutes >= 60:
         x -= draw_text(
             img,
             "時間",
@@ -118,7 +116,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         x -= (
             draw_text(
                 img,
-                "{hour:.0f}".format(hour=on_minutes / 60),
+                "{hour:.0f}".format(hour=minutes / 60),
                 [x, y],
                 face["value"],
                 "right",
@@ -134,6 +132,45 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         "right",
         color="#000",
     )
+
+    return value_height
+
+
+def draw_usage(img, panel_config, db_config, icon_config, face):
+    now = datetime.datetime.now()
+    period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
+
+    work_minutes = get_on_minutes(
+        db_config,
+        panel_config["TARGET"]["TYPE"],
+        panel_config["TARGET"]["HOST"],
+        panel_config["TARGET"]["PARAM"],
+        panel_config["TARGET"]["THRESHOLD"]["WORK"],
+        period,
+    )
+    wake_minutes = get_on_minutes(
+        db_config,
+        panel_config["TARGET"]["TYPE"],
+        panel_config["TARGET"]["HOST"],
+        panel_config["TARGET"]["PARAM"],
+        panel_config["TARGET"]["THRESHOLD"]["WAKE"],
+        period,
+    )
+    leave_minutes = wake_minutes - work_minutes
+
+    logging.info(
+        "today usage: {work} min (leave: {leave} min)".format(
+            work=work_minutes, leave=leave_minutes
+        )
+    )
+
+    x = 995
+    y = 130
+
+    y += draw_time(img, x, y, "本日", work_minutes, None, face["work"])
+    if leave_minutes > 5:
+        y += 20
+        draw_time(img, x, y, "(放置 ", leave_minutes, ")", face["leave"])
 
     draw_icon(img, icon_config, "TV", 130, 160)
     for i in range(3):

@@ -101,7 +101,7 @@ if __name__ == "__main__":
     sensor_type = config["USAGE"]["TARGET"]["TYPE"]
     hostname = config["USAGE"]["TARGET"]["HOST"]
     param = config["USAGE"]["TARGET"]["PARAM"]
-    threshold = config["USAGE"]["TARGET"]["THRESHOLD"]
+    threshold = config["USAGE"]["TARGET"]["THRESHOLD"]["WORK"]
     period = config["GRAPH"]["PARAM"]["PERIOD"]
 
     logging.info(
