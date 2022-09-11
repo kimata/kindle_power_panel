@@ -152,6 +152,24 @@ def get_equip_on_minutes(
         return 0
 
 
+def get_today_sum(config, sensor_type, hostname, param):
+    try:
+        table_list = fetch_data_impl(config, sensor_type, hostname, param, "24h", "24h")
+        mean = 0
+        if len(table_list) != 0:
+            records = table_list[0].records
+            if len(records) == 2:
+                mean = records[1].get_value()
+            elif len(records) == 1:
+                mean = records[0].get_value()
+
+        now = datetime.datetime.now()
+
+        return mean * (60 * now.hour + now.minute)
+    except:
+        return 0
+
+
 if __name__ == "__main__":
     import logger
     import json
@@ -205,5 +223,11 @@ if __name__ == "__main__":
                 indent=2,
                 default=str,
             )
+        )
+    )
+
+    logging.info(
+        "Amount of cooling water used today = {water:0f} L".format(
+            water=get_today_sum(config["INFLUXDB"], sensor_type, hostname, param)
         )
     )
