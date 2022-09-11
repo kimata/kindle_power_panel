@@ -9,7 +9,7 @@ import pathlib
 import logging
 import datetime
 
-from sensor_data import get_on_minutes
+from sensor_data import get_equip_on_minutes
 
 
 def open_icon(config, name):
@@ -140,7 +140,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
     now = datetime.datetime.now()
     period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
-    work_minutes = get_on_minutes(
+    work_minutes = get_equip_on_minutes(
         db_config,
         panel_config["TARGET"]["TYPE"],
         panel_config["TARGET"]["HOST"],
@@ -148,7 +148,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         panel_config["TARGET"]["THRESHOLD"]["WORK"],
         period,
     )
-    wake_minutes = get_on_minutes(
+    wake_minutes = get_equip_on_minutes(
         db_config,
         panel_config["TARGET"]["TYPE"],
         panel_config["TARGET"]["HOST"],
@@ -164,7 +164,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         )
     )
 
-    x = 995
+    x = 1040
     y = 130
 
     y += draw_time(img, x, y, "本日", work_minutes, None, face["work"])

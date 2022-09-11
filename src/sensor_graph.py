@@ -18,6 +18,7 @@ register_matplotlib_converters()
 from matplotlib.font_manager import FontProperties
 
 from sensor_data import fetch_data
+from sensor_data import get_valve_on_range
 
 IMAGE_DPI = 100.0
 
@@ -56,6 +57,7 @@ def plot_item(
     fmt,
     small,
     face_map,
+    vspan_list,
     is_show_value=True,
 ):
     x = data["time"]
@@ -76,18 +78,22 @@ def plot_item(
     ax.plot(
         x,
         y,
-        color="#AAAAAA",
+        color="#999999",
         marker="o",
         markevery=[len(y) - 1],
         markersize=8,
         markerfacecolor="#CCCCCC",
         markeredgewidth=5,
-        markeredgecolor="#666666",
+        markeredgecolor="#333333",
         linewidth=5.0,
         linestyle="solid",
     )
 
-    ax.fill_between(x, y, 0, facecolor="#CCCCCC", alpha=0.5)
+    ax.fill_between(x, y, 0, facecolor="#BBBBBB", alpha=0.5)
+
+    if vspan_list is not None:
+        for vspan in vspan_list:
+            ax.axvspan(vspan[0], vspan[1], color="#000000", alpha=0.07)
 
     if not data["valid"]:
         text = "?"
@@ -187,6 +193,15 @@ def draw_sensor_graph(graph_config, db_config, font_config):
                 "valid": False,
             }
 
+    valve_on_range = get_valve_on_range(
+        db_config,
+        graph_config["VALVE"]["TYPE"],
+        graph_config["VALVE"]["HOST"],
+        graph_config["VALVE"]["PARAM"],
+        graph_config["VALVE"]["THRESHOLD"],
+        graph_config["PARAM"]["PERIOD"],
+    )
+
     for row in range(0, len(equip_list)):
         data = fetch_data(
             db_config,
@@ -209,7 +224,6 @@ def draw_sensor_graph(graph_config, db_config, font_config):
             yrange = equip_list[row]["RANGE"]
         else:
             yrange = graph_config["PARAM"]["RANGE"]
-        print(yrange)
 
         plot_item(
             ax,
@@ -222,6 +236,7 @@ def draw_sensor_graph(graph_config, db_config, font_config):
             graph_config["PARAM"]["FORMAT"],
             graph_config["PARAM"]["SIZE_SMALL"],
             face_map,
+            valve_on_range if row != 0 else None,
             equip_list[row]["SHOW_VALUE"] if "SHOW_VALUE" in equip_list[row] else True,
         )
 

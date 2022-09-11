@@ -62,7 +62,47 @@ def fetch_data(config, sensor_type, hostname, param, period="30h", window="10m")
         return {"value": [], "time": [], "valid": False}
 
 
-def get_on_minutes(
+def get_valve_on_range(
+    config, sensor_type, hostname, param, threshold, period="30h", window="10m"
+):
+    try:
+        table_list = fetch_data_impl(
+            config, sensor_type, hostname, param, period, window
+        )
+
+        on_range = []
+        on_state = False
+        start_time = None
+        localtime_offset = datetime.timedelta(hours=9)
+        if len(table_list) != 0:
+            for record in table_list[0].records:
+                if record.get_value() > threshold:
+                    if not on_state:
+                        on_state = True
+                        start_time = record.get_time()
+                else:
+                    if on_state:
+                        on_range.append(
+                            [
+                                start_time + localtime_offset,
+                                record.get_time() + localtime_offset,
+                            ]
+                        )
+                        on_state = False
+        if on_state:
+            on_range.append(
+                [
+                    start_time + localtime_offset,
+                    table_list[0].records[-1].get_time() + localtime_offset,
+                ]
+            )
+
+        return on_range
+    except:
+        return []
+
+
+def get_equip_on_minutes(
     config, sensor_type, hostname, param, threshold, period="30h", window="10m"
 ):
     m = re.search(r"^(\d+)m$", window)
@@ -119,8 +159,26 @@ if __name__ == "__main__":
     logging.info(
         "ON minutes (for {period}) = {minutes} min".format(
             period=period,
-            minutes=get_on_minutes(
+            minutes=get_equip_on_minutes(
                 config["INFLUXDB"], sensor_type, hostname, param, threshold, period
             ),
+        )
+    )
+
+    sensor_type = config["GRAPH"]["VALVE"]["TYPE"]
+    hostname = config["GRAPH"]["VALVE"]["HOST"]
+    param = config["GRAPH"]["VALVE"]["PARAM"]
+    threshold = config["GRAPH"]["VALVE"]["THRESHOLD"]
+    period = config["GRAPH"]["PARAM"]["PERIOD"]
+
+    logging.info(
+        "Valve on range = {range_list}".format(
+            range_list=json.dumps(
+                get_valve_on_range(
+                    config["INFLUXDB"], sensor_type, hostname, param, threshold, period
+                ),
+                indent=2,
+                default=str,
+            )
         )
     )
