@@ -14,12 +14,12 @@ from(bucket: "{bucket}")
     |> filter(fn:(r) => r._measurement == "{sensor_type}")
     |> filter(fn: (r) => r.hostname == "{hostname}")
     |> filter(fn: (r) => r["_field"] == "{param}")
-    |> fill(usePrevious: true)
     |> aggregateWindow(every: {window}, fn: mean, createEmpty: false)
+    |> fill(usePrevious: true)
 """
 
 
-def fetch_data_impl(config, sensor_type, hostname, param, period, window="10m"):
+def fetch_data_impl(config, sensor_type, hostname, param, period, window):
     try:
         token = os.environ.get("INFLUXDB_TOKEN", config["TOKEN"])
         query = FLUX_QUERY.format(
@@ -43,7 +43,7 @@ def fetch_data_impl(config, sensor_type, hostname, param, period, window="10m"):
         raise
 
 
-def fetch_data(config, sensor_type, hostname, param, period="30h", window="10m"):
+def fetch_data(config, sensor_type, hostname, param, period="30h", window="6m"):
     try:
         table_list = fetch_data_impl(
             config, sensor_type, hostname, param, period, window
@@ -63,7 +63,7 @@ def fetch_data(config, sensor_type, hostname, param, period="30h", window="10m")
 
 
 def get_valve_on_range(
-    config, sensor_type, hostname, param, threshold, period="30h", window="10m"
+    config, sensor_type, hostname, param, threshold, period="30h", window="6m"
 ):
     try:
         table_list = fetch_data_impl(
@@ -128,7 +128,7 @@ def get_valve_on_range(
 
 
 def get_equip_on_minutes(
-    config, sensor_type, hostname, param, threshold, period="30h", window="10m"
+    config, sensor_type, hostname, param, threshold, period="30h", window="6m"
 ):
     m = re.search(r"^(\d+)m$", window)
     if m is None:

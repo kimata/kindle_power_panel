@@ -46,7 +46,7 @@ def get_face_map(font_config):
             },
         },
         "date": {
-            "value": get_font(font_config, "EN_MEDIUM", 40),
+            "value": get_font(font_config, "EN_MEDIUM", 36),
         },
     }
 
@@ -96,7 +96,9 @@ def draw_time(img, x, y, label, minutes, suffix, face):
         x -= (
             draw_text(
                 img,
-                "0" if minutes == 0 else "{minute:02d}".format(minute=minutes % 60),
+                "{minute:d}".format(minute=minutes)
+                if minutes < 10
+                else "{minute:02d}".format(minute=minutes % 60),
                 [x, y],
                 face["value"],
                 "right",
@@ -147,6 +149,7 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         panel_config["TARGET"]["PARAM"],
         panel_config["TARGET"]["THRESHOLD"]["WORK"],
         period,
+        "5m",
     )
     wake_minutes = get_equip_on_minutes(
         db_config,
@@ -155,8 +158,9 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
         panel_config["TARGET"]["PARAM"],
         panel_config["TARGET"]["THRESHOLD"]["WAKE"],
         period,
+        "5m",
     )
-    leave_minutes = wake_minutes - work_minutes
+    leave_minutes = max(wake_minutes - work_minutes - 5, 0)
 
     logging.info(
         "today usage: {work} min (leave: {leave} min)".format(
