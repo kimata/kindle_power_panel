@@ -70,7 +70,7 @@ def plot_item(
             y=0.65,
             loc="left",
             fontproperties=face_map["title"],
-            color="#333333",
+            color="#111111",
         )
     ax.set_ylim(ylim)
     ax.set_xlim([xbegin, x[-1] + datetime.timedelta(hours=1)])
@@ -78,7 +78,7 @@ def plot_item(
     ax.plot(
         x,
         y,
-        color="#999999",
+        color="#666666",
         marker="o",
         markevery=[len(y) - 1],
         markersize=8,
@@ -89,11 +89,13 @@ def plot_item(
         linestyle="solid",
     )
 
-    ax.fill_between(x, y, 0, facecolor="#BBBBBB", alpha=0.5)
+    ax.fill_between(x, y, 0, facecolor="#AAAAAA", alpha=0.5)
 
     if vspan_list is not None:
         for vspan in vspan_list:
-            ax.axvspan(vspan[0], vspan[1], color="#000000", alpha=0.07)
+            ax.axvspan(
+                vspan[0], vspan[1], color="#000000", alpha=0.16 if vspan[2] else 0.07
+            )
 
     if not data["valid"]:
         text = "?"
@@ -138,7 +140,7 @@ def plot_item(
             transform=ax.transAxes,
             horizontalalignment="right",
             color="#000000",
-            alpha=0.9,
+            alpha=0.95,
             fontproperties=font,
         )
 
@@ -149,7 +151,7 @@ def plot_item(
             transform=ax.transAxes,
             horizontalalignment="right",
             color="#000000",
-            alpha=0.9,
+            alpha=0.95,
             fontproperties=face_map["value_unit"],
         )
 

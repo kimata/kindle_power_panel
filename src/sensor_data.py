@@ -70,30 +70,55 @@ def get_valve_on_range(
             config, sensor_type, hostname, param, period, window
         )
 
-        on_range = []
-        on_state = False
-        start_time = None
-        localtime_offset = datetime.timedelta(hours=9)
         if len(table_list) != 0:
+            # NOTE: 常時冷却と間欠冷却の期間を求める
+            on_range = []
+            state = "IDLE"
+            start_time = None
+            localtime_offset = datetime.timedelta(hours=9)
+
             for record in table_list[0].records:
-                if record.get_value() > threshold:
-                    if not on_state:
-                        on_state = True
+                if record.get_value() > threshold["FULL"]:
+                    if state != "FULL":
+                        if state == "INTERM":
+                            on_range.append(
+                                [
+                                    start_time + localtime_offset,
+                                    record.get_time() + localtime_offset,
+                                    False,
+                                ]
+                            )
+                        state = "FULL"
+                        start_time = record.get_time()
+                elif record.get_value() > threshold["INTERM"]:
+                    if state != "INTERM":
+                        if state == "FULL":
+                            on_range.append(
+                                [
+                                    start_time + localtime_offset,
+                                    record.get_time() + localtime_offset,
+                                    True,
+                                ]
+                            )
+                        state = "INTERM"
                         start_time = record.get_time()
                 else:
-                    if on_state:
+                    if state != "IDLE":
                         on_range.append(
                             [
                                 start_time + localtime_offset,
                                 record.get_time() + localtime_offset,
+                                state == "FULL",
                             ]
                         )
-                        on_state = False
-        if on_state:
+                    state = "IDLE"
+
+        if state != "IDLE":
             on_range.append(
                 [
                     start_time + localtime_offset,
                     table_list[0].records[-1].get_time() + localtime_offset,
+                    state == "FULL",
                 ]
             )
 

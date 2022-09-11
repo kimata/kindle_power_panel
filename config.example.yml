@@ -31,14 +31,24 @@ GRAPH:
       TYPE: hems.sharp
       RANGE:
         - 0
-        - 150
+        - 160
       SHOW_VALUE: False
-    - HOST: リビングエアコン
+    - LABEL: リビング
+      HOST: リビングエアコン
       TYPE: hems.sharp
-    - HOST: 和室エアコン
+    - LABEL: 和室
+      HOST: 和室エアコン
       TYPE: hems.sharp
-    - HOST: 書斎エアコン
+    - LABEL: 書斎
+      HOST: 書斎エアコン
       TYPE: hems.sharp
+  VALVE:
+    HOST: rasp-cooler
+    TYPE: sensor.rasp
+    PARAM: flow
+    THRESHOLD:
+      INTERM: 0.05
+      FULL: 0.3
 
   PARAM:
     NAME: power
