@@ -78,7 +78,7 @@ def plot_item(
     ax.plot(
         x,
         y,
-        color="#666666",
+        color="#999999",
         marker="o",
         markevery=[len(y) - 1],
         markersize=8,
