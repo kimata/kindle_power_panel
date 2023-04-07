@@ -18,11 +18,25 @@ from(bucket: "{bucket}")
     |> fill(usePrevious: true)
 """
 
+FLUX_SUM_QUERY = """
+from(bucket: "{bucket}")
+    |> range(start: -{period})
+    |> filter(fn:(r) => r._measurement == "{sensor_type}")
+    |> filter(fn: (r) => r.hostname == "{hostname}")
+    |> filter(fn: (r) => r["_field"] == "{param}")
+    |> reduce(
+        fn: (r, accumulator) => ({{sum: r._value + accumulator.sum, count: accumulator.count + 1}}),
+        identity: {{sum: 0.0, count: 0}},
+    )
+"""
 
-def fetch_data_impl(config, sensor_type, hostname, param, period, window):
+
+def fetch_data_impl(
+    config, template, sensor_type, hostname, param, period, window="6m"
+):
     try:
         token = os.environ.get("INFLUXDB_TOKEN", config["TOKEN"])
-        query = FLUX_QUERY.format(
+        query = template.format(
             bucket=config["BUCKET"],
             sensor_type=sensor_type,
             hostname=hostname,
@@ -43,10 +57,10 @@ def fetch_data_impl(config, sensor_type, hostname, param, period, window):
         raise
 
 
-def fetch_data(config, sensor_type, hostname, param, period="30h", window="6m"):
+def fetch_data(config, sensor_type, hostname, param, period="30h"):
     try:
         table_list = fetch_data_impl(
-            config, sensor_type, hostname, param, period, window
+            config, FLUX_QUERY, sensor_type, hostname, param, period
         )
         data = []
         time = []
@@ -62,12 +76,10 @@ def fetch_data(config, sensor_type, hostname, param, period="30h", window="6m"):
         return {"value": [], "time": [], "valid": False}
 
 
-def get_valve_on_range(
-    config, sensor_type, hostname, param, threshold, period="30h", window="6m"
-):
+def get_valve_on_range(config, sensor_type, hostname, param, threshold, period="30h"):
     try:
         table_list = fetch_data_impl(
-            config, sensor_type, hostname, param, period, window
+            config, FLUX_QUERY, sensor_type, hostname, param, period
         )
 
         if len(table_list) != 0:
@@ -138,7 +150,7 @@ def get_equip_on_minutes(
 
     try:
         table_list = fetch_data_impl(
-            config, sensor_type, hostname, param, period, window
+            config, FLUX_QUERY, sensor_type, hostname, param, period, window
         )
 
         count = 0
@@ -154,18 +166,17 @@ def get_equip_on_minutes(
 
 def get_today_sum(config, sensor_type, hostname, param):
     try:
-        table_list = fetch_data_impl(config, sensor_type, hostname, param, "24h", "24h")
-        mean = 0
-        if len(table_list) != 0:
-            records = table_list[0].records
-            if len(records) == 2:
-                mean = records[1].get_value()
-            elif len(records) == 1:
-                mean = records[0].get_value()
-
         now = datetime.datetime.now()
 
-        return mean * (60 * now.hour + now.minute)
+        period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
+
+        table_list = fetch_data_impl(
+            config, FLUX_SUM_QUERY, sensor_type, hostname, param, period
+        )
+
+        count, total = table_list.to_values(columns=["count", "sum"])[0]
+
+        return total * (((now.hour * 60 + now.minute) * 60.0) / count) / 60
     except:
         return 0
 

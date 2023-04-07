@@ -125,8 +125,6 @@ def plot_item(
     for label in ax.get_yticklabels():
         label.set_fontproperties(face_map["yaxis"])
 
-    # ax.set_ylabel(unit, fontproperties=face_map["axis_major"])
-
     ax.grid(
         axis="x", color="#000000", alpha=0.1, linestyle="-", which="both", linewidth=1
     )
