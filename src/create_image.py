@@ -23,9 +23,9 @@ logging.info("start to create image")
 config = load_config()
 
 img = PIL.Image.new(
-    "L",
+    "RGBA",
     (config["PANEL"]["DEVICE"]["WIDTH"], config["PANEL"]["DEVICE"]["HEIGHT"]),
-    "#FFF",
+    (255, 255, 255, 255),
 )
 try:
     usage_panel_img = draw_usage_panel(
@@ -42,7 +42,7 @@ except:
     draw = PIL.ImageDraw.Draw(img)
     draw.rectangle(
         (0, 0, config["PANEL"]["DEVICE"]["WIDTH"], config["PANEL"]["DEVICE"]["HEIGHT"]),
-        fill=(255),
+        fill=(255, 255, 255, 255),
     )
 
     draw_text(
@@ -71,5 +71,4 @@ except:
         )
     print(traceback.format_exc(), file=sys.stderr)
 
-
-img.save(sys.stdout.buffer, "PNG")
+img.convert("L").save(sys.stdout.buffer, "PNG")
