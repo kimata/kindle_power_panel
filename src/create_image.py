@@ -23,9 +23,9 @@ logging.info("start to create image")
 config = load_config()
 
 img = PIL.Image.new(
-    "RGBA",
+    "L",
     (config["PANEL"]["DEVICE"]["WIDTH"], config["PANEL"]["DEVICE"]["HEIGHT"]),
-    (255, 255, 255, 255),
+    "#FFF",
 )
 try:
     usage_panel_img = draw_usage_panel(
