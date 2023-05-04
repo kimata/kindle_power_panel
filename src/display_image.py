@@ -14,6 +14,7 @@ import traceback
 
 import logger
 from config import load_config
+import notify_slack
 
 UPDATE_SEC = 60
 REFRESH = 60
@@ -90,7 +91,15 @@ while True:
     gc.collect()
 
     if fail > FAIL_MAX:
-        sys.stderr.write("接続エラーが続いたので終了します．\n")
+        error_msg = "接続エラーが続いたので終了します．"
+        sys.stderr.write(error_msg + "\n")
+        notify_slack.error(
+            config["SLACK"]["BOT_TOKEN"],
+            config["SLACK"]["ERROR"]["CHANNEL"],
+            error_msg,
+            config["SLACK"]["ERROR"]["INTERVAL_MIN"],
+        )
+
         sys.exit(-1)
 
     # 更新されていることが直感的に理解しやすくなるように，更新タイミングを 0 秒
