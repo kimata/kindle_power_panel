@@ -32,7 +32,7 @@ def notify_error(config):
     )
 
 
-def ssh_connect(config, hostname):
+def ssh_connect(hostname):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(
@@ -57,11 +57,12 @@ logging.info("Kindle hostname: %s" % (kindle_hostname))
 config = load_config()
 
 try:
-    ssh = ssh_connect(config, kindle_hostname)
+    ssh = ssh_connect(kindle_hostname)
     logging.info("put the kindle into signage mode")
     ssh.exec_command("initctl stop powerd")
     ssh.exec_command("initctl stop framework")
 except:
+    notify_error(config)
     logging.error(traceback.format_exc())
     sys.exit(-1)
 
@@ -92,6 +93,7 @@ while True:
     except:
         sys.stdout.flush()
         notify_error(config)
+        logging.error(traceback.format_exc())
 
         fail += 1
         time.sleep(10)
