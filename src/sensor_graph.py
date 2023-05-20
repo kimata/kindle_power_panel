@@ -18,7 +18,7 @@ register_matplotlib_converters()
 from matplotlib.font_manager import FontProperties
 
 from sensor_data import fetch_data
-from sensor_data import get_valve_on_range
+from sensor_data import get_equip_mode_period
 
 IMAGE_DPI = 100.0
 
@@ -47,20 +47,83 @@ def get_face_map(font_config):
     }
 
 
+def draw_grid(ax, face_map):
+    ax.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 24, 6)))
+    ax.xaxis.set_minor_formatter(mdates.DateFormatter("\n%-H"))
+    ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%-d日"))
+
+    ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(3))
+    ax.yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter("{x:,.0f}"))
+
+    for label in ax.get_xticklabels():
+        label.set_fontproperties(face_map["xaxis_major"])
+    for label in ax.get_xminorticklabels():
+        label.set_fontproperties(face_map["xaxis_minor"])
+
+    for label in ax.get_yticklabels():
+        label.set_fontproperties(face_map["yaxis"])
+
+    ax.grid(
+        axis="x", color="#000000", alpha=0.1, linestyle="-", which="both", linewidth=1
+    )
+    ax.grid(axis="y", color="#000000", alpha=0.1, linestyle="-", linewidth=1)
+
+    ax.label_outer()
+
+
+def draw_value(ax, data, fmt, unit, small, face_map):
+    if not data["valid"]:
+        value = "?"
+    else:
+        value = fmt.format(
+            next((item for item in reversed(data["value"]) if item is not None), None)
+        )
+
+    if small:
+        font = face_map["value_small"]
+    else:
+        font = face_map["value"]
+
+    ax.text(
+        0.96 - len(unit) * 0.05,
+        0.05,
+        value,
+        transform=ax.transAxes,
+        horizontalalignment="right",
+        color="#000000",
+        alpha=0.95,
+        fontproperties=font,
+    )
+
+    ax.text(
+        0.96,
+        0.05,
+        unit,
+        transform=ax.transAxes,
+        horizontalalignment="right",
+        color="#000000",
+        alpha=0.95,
+        fontproperties=face_map["value_unit"],
+    )
+
+
 def plot_item(
     ax,
     title,
-    unit,
     data,
     xbegin,
     ylabel,
     ylim,
     fmt,
+    unit,
     small,
     face_map,
     vspan_list,
     is_show_value=True,
 ):
+    logging.info("Plot {title}".format(title=title))
+
     x = data["time"]
     y = data["value"]
 
@@ -98,63 +161,10 @@ def plot_item(
                 vspan[0], vspan[1], color="#000000", alpha=0.16 if vspan[2] else 0.07
             )
 
-    if not data["valid"]:
-        text = "?"
-    else:
-        text = fmt.format(
-            next((item for item in reversed(y) if item is not None), None)
-        )
-
-    if small:
-        font = face_map["value_small"]
-    else:
-        font = face_map["value"]
-
-    ax.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 24, 6)))
-    ax.xaxis.set_minor_formatter(mdates.DateFormatter("\n%-H"))
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%-d日"))
-
-    ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(3))
-    ax.yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter("{x:,.0f}"))
-
-    for label in ax.get_xticklabels():
-        label.set_fontproperties(face_map["xaxis_major"])
-    for label in ax.get_xminorticklabels():
-        label.set_fontproperties(face_map["xaxis_minor"])
-
-    for label in ax.get_yticklabels():
-        label.set_fontproperties(face_map["yaxis"])
-
-    ax.grid(
-        axis="x", color="#000000", alpha=0.1, linestyle="-", which="both", linewidth=1
-    )
-    ax.grid(axis="y", color="#000000", alpha=0.1, linestyle="-", linewidth=1)
+    draw_grid(ax, face_map)
 
     if is_show_value:
-        ax.text(
-            0.96 - len(unit) * 0.05,
-            0.05,
-            text,
-            transform=ax.transAxes,
-            horizontalalignment="right",
-            color="#000000",
-            alpha=0.95,
-            fontproperties=font,
-        )
-
-        ax.text(
-            0.96,
-            0.05,
-            unit,
-            transform=ax.transAxes,
-            horizontalalignment="right",
-            color="#000000",
-            alpha=0.95,
-            fontproperties=face_map["value_unit"],
-        )
-
-    ax.label_outer()
+        draw_value(ax, data, fmt, unit, small, face_map)
 
 
 def draw_sensor_graph(graph_config, db_config, font_config):
@@ -194,7 +204,7 @@ def draw_sensor_graph(graph_config, db_config, font_config):
                 "valid": False,
             }
 
-    valve_on_range = get_valve_on_range(
+    valve_on_period = get_equip_mode_period(
         db_config,
         graph_config["VALVE"]["TYPE"],
         graph_config["VALVE"]["HOST"],
@@ -211,6 +221,7 @@ def draw_sensor_graph(graph_config, db_config, font_config):
             graph_config["PARAM"]["NAME"],
             graph_config["PARAM"]["PERIOD"],
         )
+
         if not data["valid"]:
             data = cache
 
@@ -229,15 +240,15 @@ def draw_sensor_graph(graph_config, db_config, font_config):
         plot_item(
             ax,
             title,
-            graph_config["PARAM"]["UNIT"],
             data,
             time_begin,
             graph_config["PARAM"]["UNIT"],
             yrange,
             graph_config["PARAM"]["FORMAT"],
+            graph_config["PARAM"]["UNIT"],
             graph_config["PARAM"]["SIZE_SMALL"],
             face_map,
-            valve_on_range if row != 0 else None,
+            valve_on_period if row != 0 else None,
             equip_list[row]["SHOW_VALUE"] if "SHOW_VALUE" in equip_list[row] else True,
         )
 

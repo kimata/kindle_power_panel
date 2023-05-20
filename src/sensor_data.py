@@ -195,67 +195,91 @@ def get_equip_on_minutes(
 
 
 def get_equip_mode_period(
-    config, sensor_type, hostname, param, threshold, period="30h"
+    config,
+    sensor_type,
+    hostname,
+    param,
+    threshold,
+    period="30h",
+    every_min=1,
+    window_min=3,
 ):
     logging.info(
         (
-            "Get equipment mode period (type: {type}, host: {host}, "
-            + "param: {param}, period: {period})"
+            "Get equipment mode period (type: {type}, host: {host}, param: {param}, "
+            + "threshold: {threshold}, period: {period}, every: {every}min, window: {window}min)"
         ).format(
             type=sensor_type,
             host=hostname,
             param=param,
             threshold=threshold,
             period=period,
+            every=every_min,
+            window=window_min,
         )
     )
+
     try:
         table_list = fetch_data_impl(
-            config, FLUX_QUERY, sensor_type, hostname, param, period
+            config,
+            FLUX_QUERY,
+            sensor_type,
+            hostname,
+            param,
+            period,
+            every_min,
+            window_min,
         )
 
-        if len(table_list) != 0:
-            # NOTE: 常時冷却と間欠冷却の期間を求める
-            on_range = []
-            state = "IDLE"
-            start_time = None
-            localtime_offset = datetime.timedelta(hours=9)
+        if len(table_list) == 0:
+            return []
 
-            for record in table_list[0].records:
-                if record.get_value() > threshold["FULL"]:
-                    if state != "FULL":
-                        if state == "INTERM":
-                            on_range.append(
-                                [
-                                    start_time + localtime_offset,
-                                    record.get_time() + localtime_offset,
-                                    False,
-                                ]
-                            )
-                        state = "FULL"
-                        start_time = record.get_time()
-                elif record.get_value() > threshold["INTERM"]:
-                    if state != "INTERM":
-                        if state == "FULL":
-                            on_range.append(
-                                [
-                                    start_time + localtime_offset,
-                                    record.get_time() + localtime_offset,
-                                    True,
-                                ]
-                            )
-                        state = "INTERM"
-                        start_time = record.get_time()
-                else:
-                    if state != "IDLE":
+        # NOTE: 常時冷却と間欠冷却の期間を求める
+        on_range = []
+        state = "IDLE"
+        start_time = None
+        localtime_offset = datetime.timedelta(hours=9)
+
+        for record in table_list[0].records:
+            # NOTE: aggregateWindow(createEmpty: true) と fill(usePrevious: true) の組み合わせ
+            # だとタイミングによって，先頭に None が入る
+            if record.get_value() is None:
+                continue
+
+            if record.get_value() > threshold["FULL"]:
+                if state != "FULL":
+                    if state == "INTERM":
                         on_range.append(
                             [
                                 start_time + localtime_offset,
                                 record.get_time() + localtime_offset,
-                                state == "FULL",
+                                False,
                             ]
                         )
-                    state = "IDLE"
+                    state = "FULL"
+                    start_time = record.get_time()
+            elif record.get_value() > threshold["INTERM"]:
+                if state != "INTERM":
+                    if state == "FULL":
+                        on_range.append(
+                            [
+                                start_time + localtime_offset,
+                                record.get_time() + localtime_offset,
+                                True,
+                            ]
+                        )
+                    state = "INTERM"
+                    start_time = record.get_time()
+            else:
+                if state != "IDLE":
+                    on_range.append(
+                        [
+                            start_time + localtime_offset,
+                            record.get_time() + localtime_offset,
+                            state == "FULL",
+                        ]
+                    )
+                state = "IDLE"
 
         if state != "IDLE":
             on_range.append(
