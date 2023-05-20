@@ -4,11 +4,12 @@
 InfluxDB から電子機器の使用時間を取得します．
 
 Usage:
-  sensor_data.py [-f CONFIG] [-w WINDOW]
+  sensor_data.py [-f CONFIG]  [-e EVERY] [-w WINDOW]
 
 Options:
   -f CONFIG    : CONFIG を設定ファイルとして読み込んで実行します．[default: config.yaml]
-  -w WINDOWE   : 算出に使うウィンドウ [default: 6m]
+  -e EVERY     : 何分ごとのデータを取得するか [default: 1]
+  -w WINDOWE   : 算出に使うウィンドウ [default: 5]
 """
 
 from docopt import docopt
@@ -16,18 +17,18 @@ from docopt import docopt
 import influxdb_client
 import datetime
 import os
-import re
 import logging
 import traceback
 
 FLUX_QUERY = """
 from(bucket: "{bucket}")
-    |> range(start: -{period})
+|> range(start: -{period})
     |> filter(fn:(r) => r._measurement == "{sensor_type}")
     |> filter(fn: (r) => r.hostname == "{hostname}")
     |> filter(fn: (r) => r["_field"] == "{param}")
-    |> aggregateWindow(every: {window}, fn: mean, createEmpty: true)
+    |> aggregateWindow(every: {window}m, fn: mean, createEmpty: true)
     |> fill(usePrevious: true)
+    |> timedMovingAverage(every: {every}m, period: {window}m)
 """
 
 FLUX_SUM_QUERY = """
@@ -44,16 +45,25 @@ from(bucket: "{bucket}")
 
 
 def fetch_data_impl(
-    config, template, sensor_type, hostname, param, period, window="5m"
+    config,
+    template,
+    sensor_type,
+    hostname,
+    param,
+    period,
+    every,
+    window,
 ):
     try:
         token = os.environ.get("INFLUXDB_TOKEN", config["TOKEN"])
+
         query = template.format(
             bucket=config["BUCKET"],
             sensor_type=sensor_type,
             hostname=hostname,
             param=param,
             period=period,
+            every=every,
             window=window,
         )
         logging.debug("Flux query = {query}".format(query=query))
@@ -63,16 +73,39 @@ def fetch_data_impl(
         query_api = client.query_api()
 
         return query_api.query(query=query)
-    except:
-        logging.error("Flux query = {query}".format(query=query))
-        logging.error(traceback.format_exc())
+    except Exception as e:
+        logging.warning(e)
+        logging.warning(traceback.format_exc())
         raise
 
 
-def fetch_data(config, sensor_type, hostname, param, period="30h"):
+def fetch_data(
+    config, sensor_type, hostname, param, period="30h", every_min=1, window_min=5
+):
+    logging.info(
+        (
+            "Fetch data (type: {type}, host: {host}, param: {param}, "
+            + "period: {period}, every: {every}min, window: {window})min"
+        ).format(
+            type=sensor_type,
+            host=hostname,
+            param=param,
+            period=period,
+            every=every_min,
+            window=window_min,
+        )
+    )
+
     try:
         table_list = fetch_data_impl(
-            config, FLUX_QUERY, sensor_type, hostname, param, period
+            config,
+            FLUX_QUERY,
+            sensor_type,
+            hostname,
+            param,
+            period,
+            every_min,
+            window_min,
         )
         data = []
         time = []
@@ -80,15 +113,102 @@ def fetch_data(config, sensor_type, hostname, param, period="30h"):
 
         if len(table_list) != 0:
             for record in table_list[0].records:
+                # NOTE: aggregateWindow(createEmpty: true) と fill(usePrevious: true) の組み合わせ
+                # だとタイミングによって，先頭に None が入る
+                if record.get_value() is None:
+                    continue
                 data.append(record.get_value())
                 time.append(record.get_time() + localtime_offset)
 
+        # NOTE: timedMovingAverage を使うと，末尾に余分なデータが入るので取り除く
+        every_min = int(every_min)
+        window_min = int(window_min)
+        if window_min > every_min:
+            data = data[: (every_min - window_min)]
+            time = time[: (every_min - window_min)]
+
+        logging.info("data count = {count}".format(count=len(time)))
+
         return {"value": data, "time": time, "valid": len(time) != 0}
     except:
+        logging.warning(traceback.format_exc())
+
         return {"value": [], "time": [], "valid": False}
 
 
-def get_valve_on_range(config, sensor_type, hostname, param, threshold, period="30h"):
+def get_equip_on_minutes(
+    config,
+    sensor_type,
+    hostname,
+    param,
+    threshold,
+    period="30h",
+    every_min=1,
+    window_min=5,
+):
+    logging.info(
+        (
+            "Get on minutes (type: {type}, host: {host}, param: {param}, "
+            + "threshold: {threshold}, period: {period}, every: {every}min, window: {window}min)"
+        ).format(
+            type=sensor_type,
+            host=hostname,
+            param=param,
+            threshold=threshold,
+            period=period,
+            every=every_min,
+            window=window_min,
+        )
+    )
+
+    try:
+        table_list = fetch_data_impl(
+            config, FLUX_QUERY, sensor_type, hostname, param, period, every, window
+        )
+
+        if len(table_list) == 0:
+            return 0
+
+        count = 0
+
+        every_min = int(every_min)
+        window_min = int(window_min)
+        record_num = len(table_list[0].records)
+
+        for i, record in enumerate(table_list[0].records):
+            # NOTE: timedMovingAverage を使うと，末尾に余分なデータが入るので取り除く
+            if window_min > every_min:
+                if i > record_num - 1 - (window_min - every_min):
+                    continue
+
+            # NOTE: aggregateWindow(createEmpty: true) と fill(usePrevious: true) の組み合わせ
+            # だとタイミングによって，先頭に None が入る
+            if record.get_value() is None:
+                continue
+            if record.get_value() >= threshold:
+                count += 1
+
+        return count * int(every)
+    except:
+        logging.warning(traceback.format_exc())
+        return 0
+
+
+def get_equip_mode_period(
+    config, sensor_type, hostname, param, threshold, period="30h"
+):
+    logging.info(
+        (
+            "Get equipment mode period (type: {type}, host: {host}, "
+            + "param: {param}, period: {period})"
+        ).format(
+            type=sensor_type,
+            host=hostname,
+            param=param,
+            threshold=threshold,
+            period=period,
+        )
+    )
     try:
         table_list = fetch_data_impl(
             config, FLUX_QUERY, sensor_type, hostname, param, period
@@ -148,32 +268,8 @@ def get_valve_on_range(config, sensor_type, hostname, param, threshold, period="
 
         return on_range
     except:
+        logging.warning(traceback.format_exc())
         return []
-
-
-def get_equip_on_minutes(
-    config, sensor_type, hostname, param, threshold, period="30h", window="3m"
-):
-    m = re.search(r"^(\d+)m$", window)
-    if m is None:
-        raise RuntimeError("引数が異常です")
-    else:
-        unit = int(m.group(1))
-
-    try:
-        table_list = fetch_data_impl(
-            config, FLUX_QUERY, sensor_type, hostname, param, period, window
-        )
-
-        count = 0
-        if len(table_list) != 0:
-            for record in table_list[0].records:
-                if record.get_value() >= threshold:
-                    count += 1
-
-        return count * unit
-    except:
-        return 0
 
 
 def get_today_sum(config, sensor_type, hostname, param):
@@ -190,7 +286,15 @@ def get_today_sum(config, sensor_type, hostname, param):
 
         return total * (((now.hour * 60 + now.minute) * 60.0) / count) / 60
     except:
+        logging.warning(traceback.format_exc())
         return 0
+
+
+def dump_data(data):
+    for i in range(len(data["time"])):
+        logging.info(
+            "{time}: {value}".format(time=data["time"][i], value=data["value"][i])
+        )
 
 
 if __name__ == "__main__":
@@ -204,6 +308,7 @@ if __name__ == "__main__":
     logger.init("test", logging.DEBUG)
 
     config = load_config(args["-f"])
+    every = args["-e"]
     window = args["-w"]
 
     now = datetime.datetime.now()
@@ -213,14 +318,9 @@ if __name__ == "__main__":
     threshold = config["USAGE"]["TARGET"]["THRESHOLD"]["WORK"]
     period = config["GRAPH"]["PARAM"]["PERIOD"]
 
-    logging.info(
-        "data = {data}".format(
-            data=json.dumps(
-                fetch_data(config["INFLUXDB"], sensor_type, hostname, param, period),
-                sort_keys=True,
-                indent=2,
-                default=str,
-            )
+    dump_data(
+        fetch_data(
+            config["INFLUXDB"], sensor_type, hostname, param, period, every, window
         )
     )
 
@@ -236,6 +336,7 @@ if __name__ == "__main__":
                 param,
                 threshold,
                 period,
+                every,
                 window,
             ),
         )
@@ -248,9 +349,9 @@ if __name__ == "__main__":
     period = config["GRAPH"]["PARAM"]["PERIOD"]
 
     logging.info(
-        "Valve on range = {range_list}".format(
+        "Valve on period = {range_list}".format(
             range_list=json.dumps(
-                get_valve_on_range(
+                get_equip_mode_period(
                     config["INFLUXDB"], sensor_type, hostname, param, threshold, period
                 ),
                 indent=2,
@@ -259,8 +360,8 @@ if __name__ == "__main__":
         )
     )
 
-    logging.info(
-        "Amount of cooling water used today = {water:0f} L".format(
-            water=get_today_sum(config["INFLUXDB"], sensor_type, hostname, param)
-        )
-    )
+    # logging.info(
+    #     "Amount of cooling water used today = {water:0f} L".format(
+    #         water=get_today_sum(config["INFLUXDB"], sensor_type, hostname, param)
+    #     )
+    # )
