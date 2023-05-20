@@ -32,10 +32,7 @@ def get_plot_font(config, font_type, size):
 
     logging.info("Load font: {path}".format(path=font_path))
 
-    return FontProperties(
-        fname=font_path,
-        size=size,
-    )
+    return FontProperties(fname=font_path, size=size)
 
 
 def get_face_map(font_config):
