@@ -78,14 +78,17 @@ FONT:
 
     EN_MEDIUM: migmix-1p-regular.ttf
     EN_BOLD: migmix-1p-bold.ttf
+    EN_HEAVY: migmix-1p-bold.ttf
 
-    # JP_REGULAR: A-OTF-ShinGoPro-Regular.otf
-    # JP_MEDIUM: A-OTF-ShinGoPro-Medium.otf
-    # JP_BOLD: A-OTF-ShinGoPro-Bold.otf
+    # JP_REGULAR: A-OTF-UDShinGoPr6N-Regular.otf
+    # JP_MEDIUM: A-OTF-UDShinGoPr6N-Medium.otf
+    # JP_BOLD: A-OTF-UDShinGoPr6N-Bold.otf
     # EN_COND_BOLD: FuturaStd-CondensedBold.otf
     # EN_COND: FuturaStd-Condensed.otf
     # EN_MEDIUM: FuturaStd-Medium.otf
     # EN_BOLD: FuturaStd-Bold.otf
+    # EN_HEAVY: FuturaStd-Heavy.otf
+
 
 LIVENESS:
   FILE: /dev/shm/healthz
