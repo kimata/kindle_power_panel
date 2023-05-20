@@ -24,12 +24,16 @@ IMAGE_DPI = 100.0
 
 
 def get_plot_font(config, font_type, size):
+    font_path = str(
+        pathlib.Path(
+            os.path.dirname(__file__), config["PATH"], config["MAP"][font_type]
+        )
+    )
+
+    logging.info("Load font: {path}".format(path=font_path))
+
     return FontProperties(
-        fname=str(
-            pathlib.Path(
-                os.path.dirname(__file__), config["PATH"], config["MAP"][font_type]
-            )
-        ),
+        fname=font_path,
         size=size,
     )
 
