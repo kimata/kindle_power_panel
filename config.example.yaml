@@ -69,13 +69,23 @@ ICON:
 FONT:
   PATH: ../font/ # スクリプトのフォルダからの相対パス
   MAP:
-    JP_REGULAR: A-OTF-ShinGoPro-Regular.otf
-    JP_MEDIUM: A-OTF-ShinGoPro-Medium.otf
-    JP_BOLD: A-OTF-ShinGoPro-Bold.otf
-    EN_COND_BOLD: FuturaStd-CondensedBold.otf
-    EN_COND: FuturaStd-Condensed.otf
-    EN_MEDIUM: FuturaStd-Medium.otf
-    EN_BOLD: FuturaStd-Bold.otf
+    JP_REGULAR: migmix-1p-regular.ttf
+    JP_MEDIUM: migmix-1p-regular.ttf
+    JP_BOLD: migmix-1p-bold.ttf
+
+    EN_COND_BOLD: Antonio-Bold.ttf
+    EN_COND: Antonio-Regular.ttf
+
+    EN_MEDIUM: migmix-1p-regular.ttf
+    EN_BOLD: migmix-1p-bold.ttf
+
+    # JP_REGULAR: A-OTF-ShinGoPro-Regular.otf
+    # JP_MEDIUM: A-OTF-ShinGoPro-Medium.otf
+    # JP_BOLD: A-OTF-ShinGoPro-Bold.otf
+    # EN_COND_BOLD: FuturaStd-CondensedBold.otf
+    # EN_COND: FuturaStd-Condensed.otf
+    # EN_MEDIUM: FuturaStd-Medium.otf
+    # EN_BOLD: FuturaStd-Bold.otf
 
 LIVENESS:
   FILE: /dev/shm/healthz

@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+InfluxDB から電子機器の使用時間を取得します．
+
+Usage:
+  sensor_data.py [-f CONFIG] [-w WINDOW]
+
+Options:
+  -f CONFIG    : CONFIG を設定ファイルとして読み込んで実行します．[default: config.yaml]
+  -w WINDOWE   : 算出に使うウィンドウ [default: 6m]
+"""
+
+from docopt import docopt
 
 import influxdb_client
 import datetime
@@ -14,7 +26,7 @@ from(bucket: "{bucket}")
     |> filter(fn:(r) => r._measurement == "{sensor_type}")
     |> filter(fn: (r) => r.hostname == "{hostname}")
     |> filter(fn: (r) => r["_field"] == "{param}")
-    |> aggregateWindow(every: {window}, fn: mean, createEmpty: false)
+    |> aggregateWindow(every: {window}, fn: mean, createEmpty: true)
     |> fill(usePrevious: true)
 """
 
@@ -32,7 +44,7 @@ from(bucket: "{bucket}")
 
 
 def fetch_data_impl(
-    config, template, sensor_type, hostname, param, period, window="6m"
+    config, template, sensor_type, hostname, param, period, window="5m"
 ):
     try:
         token = os.environ.get("INFLUXDB_TOKEN", config["TOKEN"])
@@ -140,7 +152,7 @@ def get_valve_on_range(config, sensor_type, hostname, param, threshold, period="
 
 
 def get_equip_on_minutes(
-    config, sensor_type, hostname, param, threshold, period="30h", window="6m"
+    config, sensor_type, hostname, param, threshold, period="30h", window="3m"
 ):
     m = re.search(r"^(\d+)m$", window)
     if m is None:
@@ -187,9 +199,12 @@ if __name__ == "__main__":
 
     from config import load_config
 
+    args = docopt(__doc__)
+
     logger.init("test", logging.DEBUG)
 
-    config = load_config()
+    config = load_config(args["-f"])
+    window = args["-w"]
 
     now = datetime.datetime.now()
     sensor_type = config["USAGE"]["TARGET"]["TYPE"]
@@ -208,13 +223,20 @@ if __name__ == "__main__":
             )
         )
     )
+
     period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
     logging.info(
-        "ON minutes (for {period}) = {minutes} min".format(
+        "Today ON minutes ({period}) = {minutes} min".format(
             period=period,
             minutes=get_equip_on_minutes(
-                config["INFLUXDB"], sensor_type, hostname, param, threshold, period
+                config["INFLUXDB"],
+                sensor_type,
+                hostname,
+                param,
+                threshold,
+                period,
+                window,
             ),
         )
     )
