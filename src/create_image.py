@@ -55,11 +55,17 @@ img = PIL.Image.new(
 
 status = 0
 try:
-    usage_panel_img = draw_usage_panel(
-        config["USAGE"], config["INFLUXDB"], config["FONT"], config["ICON"]
-    )
-    sensor_graph_img = draw_sensor_graph(
+    sensor_graph_img, sub_plot_height = draw_sensor_graph(
         config["GRAPH"], config["INFLUXDB"], config["FONT"]
+    )
+    usage_panel_img = draw_usage_panel(
+        config["USAGE"],
+        config["INFLUXDB"],
+        config["GRAPH"]["EQUIP_LIST"],
+        config["GRAPH"]["OFFSET"],
+        sub_plot_height,
+        config["FONT"],
+        config["ICON"],
     )
 
     img.paste(sensor_graph_img, (0, config["GRAPH"]["OFFSET"]))

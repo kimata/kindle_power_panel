@@ -13,42 +13,46 @@ INFLUXDB:
 
 USAGE:
   WIDTH: 1072
-  HEIGHT: 400
+  HEIGHT: 1448
   TARGET:
     HOST: テレビ
     TYPE: hems.sharp
     PARAM: power
     THRESHOLD:
-      WAKE: 20
+      WAKE: 40
       WORK: 60
 
 GRAPH:
   WIDTH: 1072
-  HEIGHT: 1418
-  OFFSET: 30
+  HEIGHT: 1422
+  OFFSET: 26
   EQUIP_LIST:
     - HOST: テレビ
       TYPE: hems.sharp
       RANGE:
         - 0
-        - 160
+        - 180
       SHOW_VALUE: False
+      ICON: TV
     - LABEL: リビング
       HOST: リビングエアコン
       TYPE: hems.sharp
+      ICON: AIRCON
     - LABEL: 和室
       HOST: 和室エアコン
       TYPE: hems.sharp
+      ICON: AIRCON
     - LABEL: 書斎
       HOST: 書斎エアコン
       TYPE: hems.sharp
+      ICON: AIRCON
   VALVE:
     HOST: rasp-cooler
     TYPE: sensor.rasp
     PARAM: flow
     THRESHOLD:
       INTERM: 0.05
-      FULL: 0.3
+      FULL: 0.9
 
   PARAM:
     NAME: power
@@ -63,8 +67,12 @@ GRAPH:
 ICON:
   PATH: ../icon/ # スクリプトのフォルダからの相対パス
   MAP:
-    TV: tv.png
-    AIRCON: aircon.png
+    TV:
+      FILE: tv.png
+      SCALE: 0.3
+    AIRCON:
+      FILE: aircon.png
+      SCALE: 0.3
 
 FONT:
   PATH: ../font/ # スクリプトのフォルダからの相対パス

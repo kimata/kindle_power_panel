@@ -37,7 +37,7 @@ def get_plot_font(config, font_type, size):
 
 def get_face_map(font_config):
     return {
-        "title": get_plot_font(font_config, "JP_BOLD", 60),
+        "title": get_plot_font(font_config, "JP_BOLD", 54),
         "value": get_plot_font(font_config, "EN_MEDIUM", 100),
         "value_small": get_plot_font(font_config, "EN_COND_BOLD", 80),
         "value_unit": get_plot_font(font_config, "EN_MEDIUM", 30),
@@ -131,7 +131,7 @@ def plot_item(
         ax.set_title(
             title,
             x=0.02,
-            y=0.65,
+            y=0.54,
             loc="left",
             fontproperties=face_map["title"],
             color="#111111",
@@ -170,6 +170,7 @@ def plot_item(
 def draw_sensor_graph(graph_config, db_config, font_config):
     logging.info("draw sensor graph")
 
+    hspace = 0.1
     face_map = get_face_map(font_config)
 
     equip_list = graph_config["EQUIP_LIST"]
@@ -253,12 +254,16 @@ def draw_sensor_graph(graph_config, db_config, font_config):
         )
 
     fig.tight_layout()
-    plt.subplots_adjust(hspace=0.1, wspace=0)
+    plt.subplots_adjust(hspace=hspace, wspace=0)
 
     buf = io.BytesIO()
     plt.savefig(buf, format="png", dpi=IMAGE_DPI)
 
-    return PIL.Image.open(buf)
+    return (
+        PIL.Image.open(buf),
+        fig.get_axes()[0].get_window_extent(fig.canvas.get_renderer()).height
+        * (1 + hspace),
+    )
 
 
 if __name__ == "__main__":
@@ -272,6 +277,6 @@ if __name__ == "__main__":
 
     sensor_graph_img = draw_sensor_graph(
         config["GRAPH"], config["INFLUXDB"], config["FONT"]
-    )
+    )[0]
 
     sensor_graph_img.save("test.png", "PNG")

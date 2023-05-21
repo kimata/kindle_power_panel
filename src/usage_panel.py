@@ -13,11 +13,24 @@ from sensor_data import get_equip_on_minutes
 
 
 def open_icon(config, name):
-    return PIL.Image.open(
+    img = PIL.Image.open(
         str(
-            pathlib.Path(os.path.dirname(__file__), config["PATH"], config["MAP"][name])
+            pathlib.Path(
+                os.path.dirname(__file__), config["PATH"], config["MAP"][name]["FILE"]
+            )
         )
     )
+
+    if "SCALE" in config["MAP"][name]:
+        img = img.resize(
+            (
+                int(img.size[0] * config["MAP"][name]["SCALE"]),
+                int(img.size[1] * config["MAP"][name]["SCALE"]),
+            ),
+            PIL.Image.LANCZOS,
+        )
+
+    return img
 
 
 def get_font(config, font_type, size):
@@ -51,10 +64,8 @@ def get_face_map(font_config):
     }
 
 
-def draw_icon(img, config, name, pos_x, pos_y, w=128, h=128):
-    icon = open_icon(config, name).resize((w, h))
-
-    img.paste(icon, (pos_x, pos_y))
+def draw_icon(img, config, name, pos_x, pos_y):
+    img.paste(open_icon(config, name), (pos_x, pos_y))
 
 
 def draw_text(img, text, pos, font, align="left", color="#000"):
@@ -138,7 +149,16 @@ def draw_time(img, x, y, label, minutes, suffix, face):
     return value_height
 
 
-def draw_usage(img, panel_config, db_config, icon_config, face):
+def draw_usage(
+    img,
+    panel_config,
+    db_config,
+    equip_list,
+    offset_y,
+    sub_plot_height,
+    face,
+    icon_config,
+):
     now = datetime.datetime.now()
     period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
@@ -167,16 +187,17 @@ def draw_usage(img, panel_config, db_config, icon_config, face):
     )
 
     x = 1040
-    y = 130
+    y = offset_y + 80
 
     y += draw_time(img, x, y, "本日", work_minutes, None, face["work"])
     if leave_minutes > 5:
         y += 20
         draw_time(img, x, y, "(放置 ", leave_minutes, ")", face["leave"])
 
-    draw_icon(img, icon_config, "TV", 130, 160)
-    for i in range(3):
-        draw_icon(img, icon_config, "AIRCON", 130, 340 * i + 500)
+    y = offset_y + 130
+    for i in range(len(equip_list)):
+        draw_icon(img, icon_config, equip_list[i]["ICON"], 110, int(y))
+        y += sub_plot_height
 
 
 def draw_datetime(img, panel_config, face):
@@ -192,7 +213,15 @@ def draw_datetime(img, panel_config, face):
     )
 
 
-def draw_usage_panel(panel_config, db_config, font_config, icon_config):
+def draw_usage_panel(
+    panel_config,
+    db_config,
+    equip_list,
+    offset_y,
+    sub_plot_height,
+    font_config,
+    icon_config,
+):
     logging.info("draw usage panel")
 
     img = PIL.Image.new(
@@ -200,7 +229,16 @@ def draw_usage_panel(panel_config, db_config, font_config, icon_config):
     )
     face_map = get_face_map(font_config)
 
-    draw_usage(img, panel_config, db_config, icon_config, face_map["usage"])
+    draw_usage(
+        img,
+        panel_config,
+        db_config,
+        equip_list,
+        offset_y,
+        sub_plot_height,
+        face_map["usage"],
+        icon_config,
+    )
     draw_datetime(img, panel_config, face_map["date"])
 
     return img
