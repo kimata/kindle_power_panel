@@ -60,6 +60,8 @@ def send(token, ch_name, message):
 def split_send(token, ch_name, title, message, formatter=format_simple):
     LINE_SPLIT = 20
 
+    logging.info("Post slack channel: {ch_name}".format(ch_name=ch_name))
+
     message_lines = message.splitlines()
     for i in range(0, len(message_lines), LINE_SPLIT):
         send(
@@ -69,8 +71,8 @@ def split_send(token, ch_name, title, message, formatter=format_simple):
         )
 
 
-def info(token, ch_name, message, formatter=format_simple):
-    title = "Info"
+def info(token, ch_name, name, message, formatter=format_simple):
+    title = "Info: " + name
     split_send(token, ch_name, title, message, formatter)
 
 
@@ -107,14 +109,15 @@ def error_img(token, ch_id, title, img, text):
 def error(
     token,
     ch_name,
+    name,
     message,
     interval_min=10,
     formatter=format_simple,
 ):
-    title = "Error"
+    title = "Error: " + name
 
     if not check_interval(interval_min):
-        logging.warning("RETURN")
+        logging.warning("Interval is too short. Skipping.")
         return
 
     split_send(token, ch_name, title, message, formatter)
@@ -127,15 +130,16 @@ def error_with_image(
     token,
     ch_name,
     ch_id,
+    name,
     message,
     attatch_img,
     interval_min=10,
     formatter=format_simple,
 ):
-    title = "Error"
+    title = "Error: " + name
 
     if not check_interval(interval_min):
-        logging.warning("RETURN")
+        logging.warning("Interval is too short. Skipping.")
         return
 
     split_send(token, ch_name, title, message, formatter)
@@ -151,13 +155,18 @@ def error_with_image(
 
 
 if __name__ == "__main__":
+    import os
     import logger
     import sys
     import PIL.Image
     from config import load_config
 
-    logger.init("test", level=logging.WARNING)
+    logger.init("test", level=logging.INFO)
     logging.info("Test")
+
+    # NOTE: Slack の環境に合わせて書き換える
+    test_ch_name = "#test"
+    test_ch_id = "C058PTZG13L"
 
     config = load_config()
     if "SLACK" not in config:
@@ -174,26 +183,27 @@ if __name__ == "__main__":
     if "INFO" in config["SLACK"]:
         info(
             config["SLACK"]["BOT_TOKEN"],
-            config["SLACK"]["INFO"]["CHANNEL"]["NAME"],
+            test_ch_name,
+            os.path.basename(__file__),
             "メッセージ\nメッセージ",
         )
 
     if "ERROR" in config["SLACK"]:
         error(
             config["SLACK"]["BOT_TOKEN"],
-            config["SLACK"]["ERROR"]["CHANNEL"]["NAME"],
-            config["SLACK"]["ERROR"]["CHANNEL"]["ID"],
+            test_ch_name,
+            os.path.basename(__file__),
             "エラーメッセージ",
-            {"data": img, "text": "エラー時のスクリーンショット"},
-            interval_min=config["SLACK"]["ERROR"]["INTERVAL_MIN"],
+            0,
         )
 
-# def error(
-#     token,
-#     ch_name,
-#     message,
-#     interval_min=10,
-#     formatter=format_simple,
-#     ch_id=None,
-#     attatch_img=None,
-# ):
+    if "ERROR" in config["SLACK"]:
+        error_with_image(
+            config["SLACK"]["BOT_TOKEN"],
+            test_ch_name,
+            test_ch_id,
+            os.path.basename(__file__),
+            "エラーメッセージ",
+            {"data": img, "text": "エラー時のスクリーンショット"},
+            0,
+        )
