@@ -4,44 +4,11 @@
 import PIL.Image
 import PIL.ImageDraw
 import PIL.ImageFont
-import os
-import pathlib
 import logging
 import datetime
 
 from sensor_data import get_equip_on_minutes
-
-
-def open_icon(config, name):
-    img = PIL.Image.open(
-        str(
-            pathlib.Path(
-                os.path.dirname(__file__), config["PATH"], config["MAP"][name]["FILE"]
-            )
-        )
-    )
-
-    if "SCALE" in config["MAP"][name]:
-        img = img.resize(
-            (
-                int(img.size[0] * config["MAP"][name]["SCALE"]),
-                int(img.size[1] * config["MAP"][name]["SCALE"]),
-            ),
-            PIL.Image.LANCZOS,
-        )
-
-    return img
-
-
-def get_font(config, font_type, size):
-    return PIL.ImageFont.truetype(
-        str(
-            pathlib.Path(
-                os.path.dirname(__file__), config["PATH"], config["MAP"][font_type]
-            )
-        ),
-        size,
-    )
+from pil_util import draw_text, get_font, load_image
 
 
 def get_face_map(font_config):
@@ -65,20 +32,7 @@ def get_face_map(font_config):
 
 
 def draw_icon(img, config, name, pos_x, pos_y):
-    img.paste(open_icon(config, name), (pos_x, pos_y))
-
-
-def draw_text(img, text, pos, font, align="left", color="#000"):
-    draw = PIL.ImageDraw.Draw(img)
-
-    if align == "center":
-        pos = (pos[0] - font.getsize(text)[0] / 2, pos[1])
-    elif align == "right":
-        pos = (pos[0] - font.getsize(text)[0], pos[1])
-
-    draw.text(pos, text, color, font, None, font.getsize(text)[1] * 0.4)
-
-    return font.getsize(text)[0]
+    img.paste(load_image(config[name]), (pos_x, pos_y))
 
 
 def draw_time(img, x, y, label, minutes, suffix, face):
@@ -103,7 +57,7 @@ def draw_time(img, x, y, label, minutes, suffix, face):
             face["unit"],
             "right",
             color="#000",
-        )
+        )[0]
         x -= (
             draw_text(
                 img,
@@ -114,7 +68,7 @@ def draw_time(img, x, y, label, minutes, suffix, face):
                 face["value"],
                 "right",
                 color="#000",
-            )
+            )[0]
             + 10
         )
     if minutes >= 60:
@@ -134,7 +88,7 @@ def draw_time(img, x, y, label, minutes, suffix, face):
                 face["value"],
                 "right",
                 color="#000",
-            )
+            )[0]
             + 10
         )
     x -= draw_text(
@@ -144,7 +98,7 @@ def draw_time(img, x, y, label, minutes, suffix, face):
         face["label"],
         "right",
         color="#000",
-    )
+    )[0]
 
     return value_height
 
@@ -186,7 +140,7 @@ def draw_usage(
         )
     )
 
-    x = 1040
+    x = 1000
     y = offset_y + 80
 
     y += draw_time(img, x, y, "本日", work_minutes, None, face["work"])
@@ -206,7 +160,7 @@ def draw_datetime(img, panel_config, face):
     draw_text(
         img,
         now.strftime("%Y/%-m/%-d %H:%M"),
-        [panel_config["WIDTH"] - 20, 10],
+        [panel_config["WIDTH"] - 20, 15],
         face["value"],
         "right",
         color="#333",

@@ -69,19 +69,17 @@ GRAPH:
     UNIT: 'W'
     RANGE:
       - 0
-      - 1500
+      - 1000
     PERIOD: '48h'
     SIZE_SMALL: False
 
 ICON:
-  PATH: ../icon/ # スクリプトのフォルダからの相対パス
-  MAP:
-    TV:
-      FILE: tv.png
-      SCALE: 0.3
-    AIRCON:
-      FILE: aircon.png
-      SCALE: 0.3
+  TV:
+    PATH: ../icon/tv.png
+    SCALE: 0.3
+  AIRCON:
+    PATH: ../icon/aircon.png
+    SCALE: 0.3
 
 FONT:
   PATH: ../font/ # スクリプトのフォルダからの相対パス
