@@ -43,7 +43,7 @@ args = docopt(__doc__)
 
 logger.init("panel.kindle.power", level=logging.INFO)
 
-logging.info("start to create image")
+logging.info("Start to create image")
 
 config = load_config(args["-f"])
 

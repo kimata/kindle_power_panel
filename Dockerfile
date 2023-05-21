@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     python3-yaml python3-coloredlogs \
     python3-pil python3-matplotlib python3-pandas \
     python3-paramiko \
-    curl \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
