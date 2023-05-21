@@ -46,6 +46,15 @@ GRAPH:
       HOST: 書斎エアコン
       TYPE: hems.sharp
       ICON: AIRCON
+    - LABEL: 和室
+      HOST: 和室エアコン
+      TYPE: hems.sharp
+      ICON: AIRCON
+    - LABEL: 書斎
+      HOST: 書斎エアコン
+      TYPE: hems.sharp
+      ICON: AIRCON
+
   VALVE:
     HOST: rasp-cooler
     TYPE: sensor.rasp
