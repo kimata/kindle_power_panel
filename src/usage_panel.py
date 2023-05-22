@@ -8,7 +8,7 @@ import logging
 import datetime
 
 from sensor_data import get_equip_on_minutes
-from pil_util import draw_text, get_font, load_image
+from pil_util import draw_text, text_size, get_font, load_image
 
 
 def get_face_map(font_config):
@@ -16,7 +16,7 @@ def get_face_map(font_config):
         "usage": {
             "work": {
                 "label": get_font(font_config, "JP_REGULAR", 50),
-                "value": get_font(font_config, "EN_HEAVY", 160),
+                "value": get_font(font_config, "JP_BOLD", 150),
                 "unit": get_font(font_config, "JP_REGULAR", 60),
             },
             "leave": {
@@ -41,64 +41,45 @@ def draw_time(img, x, y, label, minutes, suffix, face):
     label_dy = value_height - face["label"].getsize("0")[1]
 
     if suffix is not None:
-        x -= draw_text(
+        draw_text(
             img,
             suffix,
             [x, y + label_dy],
             face["label"],
             "right",
-            color="#000",
+            "#000",
+            False,
         )
+        x -= text_size(face["label"], suffix)[0]
+
     if (minutes == 0) or (minutes % 60) != 0:
-        x -= draw_text(
+        draw_text(
             img,
             "分",
             [x, y + unit_dy],
             face["unit"],
             "right",
-            color="#000",
-        )[0]
-        x -= (
-            draw_text(
-                img,
-                "{minute:d}".format(minute=minutes)
-                if minutes < 10
-                else "{minute:02d}".format(minute=minutes % 60),
-                [x, y],
-                face["value"],
-                "right",
-                color="#000",
-            )[0]
-            + 10
+            "#000",
+            False,
         )
+        x -= text_size(face["unit"], "分")[0] + 10
+
+        if minutes < 10:
+            minute_text = "{minute:d}".format(minute=minutes)
+        else:
+            minute_text = "{minute:02d}".format(minute=minutes % 60)
+        draw_text(img, minute_text, [x, y], face["value"], "right", "#000", False)
+        x -= text_size(face["value"], minute_text)[0] + 10
+
     if minutes >= 60:
-        x -= draw_text(
-            img,
-            "時間",
-            [x, y + unit_dy],
-            face["unit"],
-            "right",
-            color="#000",
-        )[0]
-        x -= (
-            draw_text(
-                img,
-                "{hour:.0f}".format(hour=minutes / 60),
-                [x, y],
-                face["value"],
-                "right",
-                color="#000",
-            )[0]
-            + 10
-        )
-    x -= draw_text(
-        img,
-        label,
-        [x, y + label_dy],
-        face["label"],
-        "right",
-        color="#000",
-    )[0]
+        draw_text(img, "時間", [x, y + unit_dy], face["unit"], "right", "#000", False)
+        x -= text_size(face["unit"], "時間")[0] + 10
+
+        hour_text = "{hour:.0f}".format(hour=minutes / 60)
+        draw_text(img, hour_text, [x, y], face["value"], "right", "#000", False)
+        x -= text_size(face["value"], hour_text)[0] + 10
+
+    draw_text(img, label, [x, y + label_dy], face["label"], "right", "#000", False)
 
     return value_height
 
@@ -140,13 +121,16 @@ def draw_usage(
         )
     )
 
-    x = 1000
-    y = offset_y + 80
+    x = 980
+    y = offset_y + 30
 
-    y += draw_time(img, x, y, "本日", work_minutes, None, face["work"])
     if leave_minutes > 5:
-        y += 20
+        y += draw_time(img, x, y, "本日", work_minutes, None, face["work"])
+        y += 15
         draw_time(img, x, y, "(放置 ", leave_minutes, ")", face["leave"])
+    else:
+        y += 45
+        draw_time(img, x, y, "本日", work_minutes, None, face["work"])
 
     y = offset_y + 130
     for i in range(len(equip_list)):
