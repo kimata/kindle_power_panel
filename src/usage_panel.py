@@ -79,7 +79,7 @@ def draw_time(img, x, y, label, minutes, suffix, face):
             face["unit"],
             "right",
             color="#000",
-        )
+        )[0]
         x -= (
             draw_text(
                 img,
