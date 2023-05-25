@@ -25,7 +25,7 @@ from sensor_graph import draw_sensor_graph
 
 from usage_panel import draw_usage_panel
 from pil_util import draw_text, get_font, convert_to_gray
-from config import load_config
+from config import load_config, get_db_config
 
 
 def notify_error(config):
@@ -45,7 +45,10 @@ logger.init("panel.kindle.power", level=logging.INFO)
 
 logging.info("Start to create image")
 
-config = load_config(args["-f"])
+config_file = args["-f"]
+
+logging.info("Using config config: {config_file}".format(config_file=config_file))
+config = load_config(config_file)
 
 img = PIL.Image.new(
     "RGBA",
@@ -56,11 +59,11 @@ img = PIL.Image.new(
 status = 0
 try:
     sensor_graph_img, sub_plot_height = draw_sensor_graph(
-        config["GRAPH"], config["INFLUXDB"], config["FONT"]
+        config["GRAPH"], get_db_config(config), config["FONT"]
     )
     usage_panel_img = draw_usage_panel(
         config["USAGE"],
-        config["INFLUXDB"],
+        get_db_config(config),
         config["GRAPH"]["EQUIP_LIST"],
         config["GRAPH"]["OFFSET"],
         sub_plot_height,
