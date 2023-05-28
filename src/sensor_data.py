@@ -20,14 +20,18 @@ import os
 import logging
 import traceback
 
+# NOTE: データが欠損している期間も含めてデータを敷き詰めるため，
+# timedMovingAverage を使う．timedMovingAverage の計算の結果，データが後ろに
+# ずれるので，あらかじめ offset を使って前にずらしておく．
 FLUX_QUERY = """
 from(bucket: "{bucket}")
 |> range(start: -{period})
     |> filter(fn:(r) => r._measurement == "{measure}")
     |> filter(fn: (r) => r.hostname == "{hostname}")
     |> filter(fn: (r) => r["_field"] == "{field}")
-    |> aggregateWindow(every: {window}m, offset:-{offset}s, fn: mean, createEmpty: {create_empty})
+    |> aggregateWindow(every: {window}m, offset:-{window}m, fn: mean, createEmpty: {create_empty})
     |> fill(usePrevious: true)
+    |> timedMovingAverage(every: {every}m, period: {window}m)
 """
 
 FLUX_SUM_QUERY = """
@@ -66,8 +70,6 @@ def fetch_data_impl(
             period=period,
             every=every,
             window=window,
-            # NOTE: 半分オフセットさせて，window 区間中央のタイミングの値とする
-            offset=int(window * 60 / 2),
             create_empty=str(create_empty).lower(),
         )
         if last:
@@ -93,7 +95,7 @@ def fetch_data(
     field,
     period="30h",
     every_min=1,
-    window_min=5,
+    window_min=3,
     create_empty=True,
     last=False,
 ):
@@ -138,6 +140,7 @@ def fetch_data(
                 if record.get_value() is None:
                     logging.debug("DELETE")
                     continue
+
                 data.append(record.get_value())
                 time.append(record.get_time() + localtime_offset)
 
@@ -172,7 +175,7 @@ def get_equip_on_minutes(
 ):
     logging.info(
         (
-            "Get on minutes (type: {type}, host: {host}, field: {field}, "
+            "Get 'ON' minutes (type: {type}, host: {host}, field: {field}, "
             + "threshold: {threshold}, period: {period}, every: {every}min, "
             + "window: {window}min, create_empty: {create_empty})"
         ).format(
@@ -208,7 +211,6 @@ def get_equip_on_minutes(
         every_min = int(every_min)
         window_min = int(window_min)
         record_num = len(table_list[0].records)
-
         for i, record in enumerate(table_list[0].records):
             if create_empty:
                 # NOTE: timedMovingAverage を使うと，末尾に余分なデータが入るので取り除く

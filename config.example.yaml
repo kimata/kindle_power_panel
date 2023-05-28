@@ -61,7 +61,7 @@ GRAPH:
     PARAM: flow
     THRESHOLD:
       INTERM: 0.05
-      FULL: 0.9
+      FULL: 0.5
 
   PARAM:
     NAME: power
