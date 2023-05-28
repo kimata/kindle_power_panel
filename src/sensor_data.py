@@ -40,6 +40,8 @@ from(bucket: "{bucket}")
     |> filter(fn:(r) => r._measurement == "{measure}")
     |> filter(fn: (r) => r.hostname == "{hostname}")
     |> filter(fn: (r) => r["_field"] == "{field}")
+    |> aggregateWindow(every: {every}m, offset:-{every}m, fn: mean, createEmpty: {create_empty})
+    |> fill(usePrevious: true)
     |> reduce(
         fn: (r, accumulator) => ({{sum: r._value + accumulator.sum, count: accumulator.count + 1}}),
         identity: {{sum: 0.0, count: 0}},
@@ -336,17 +338,30 @@ def get_equip_mode_period(
 
 def get_today_sum(config, measure, hostname, field):
     try:
+        every_min = 1
+        window_min = 5
         now = datetime.datetime.now()
 
         period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
         table_list = fetch_data_impl(
-            config, FLUX_SUM_QUERY, measure, hostname, field, period
+            config,
+            FLUX_SUM_QUERY,
+            measure,
+            hostname,
+            field,
+            period,
+            every_min,
+            window_min,
+            True,
         )
 
-        count, total = table_list.to_values(columns=["count", "sum"])[0]
+        value_list = table_list.to_values(columns=["count", "sum"])
 
-        return total * (((now.hour * 60 + now.minute) * 60.0) / count) / 60
+        if len(value_list) == 0:
+            return 0
+        else:
+            return value_list[0][1]
     except:
         logging.warning(traceback.format_exc())
         return 0
@@ -363,7 +378,7 @@ if __name__ == "__main__":
     import logger
     import json
 
-    from config import load_config
+    from config import load_config, get_db_config
 
     args = docopt(__doc__)
 
@@ -376,20 +391,13 @@ if __name__ == "__main__":
     now = datetime.datetime.now()
     measure = config["USAGE"]["TARGET"]["TYPE"]
     hostname = config["USAGE"]["TARGET"]["HOST"]
-    field = config["USAGE"]["TARGET"]["FIELD"]
+    param = config["USAGE"]["TARGET"]["PARAM"]
     threshold = config["USAGE"]["TARGET"]["THRESHOLD"]["WORK"]
-    period = config["GRAPH"]["FIELD"]["PERIOD"]
+    period = config["GRAPH"]["PARAM"]["PERIOD"]
 
-    db_config = {
-        "token": config["INFLUXDB"]["TOKEN"],
-        "bucket": config["INFLUXDB"]["BUCKET"],
-        "url": config["INFLUXDB"]["URL"],
-        "org": config["INFLUXDB"]["ORG"],
-    }
+    db_config = get_db_config(config)
 
-    dump_data(
-        fetch_data(config["INFLUXDB"], measure, hostname, field, period, every, window)
-    )
+    dump_data(fetch_data(db_config, measure, hostname, param, period, every, window))
 
     period = "{hour}h{minute}m".format(hour=now.hour, minute=now.minute)
 
@@ -397,10 +405,10 @@ if __name__ == "__main__":
         "Today ON minutes ({period}) = {minutes} min".format(
             period=period,
             minutes=get_equip_on_minutes(
-                config["INFLUXDB"],
+                db_config,
                 measure,
                 hostname,
-                field,
+                param,
                 threshold,
                 period,
                 every,
@@ -411,15 +419,19 @@ if __name__ == "__main__":
 
     measure = config["GRAPH"]["VALVE"]["TYPE"]
     hostname = config["GRAPH"]["VALVE"]["HOST"]
-    field = config["GRAPH"]["VALVE"]["FIELD"]
-    threshold = config["GRAPH"]["VALVE"]["THRESHOLD"]
-    period = config["GRAPH"]["FIELD"]["PERIOD"]
+    param = config["GRAPH"]["VALVE"]["PARAM"]
+    threshold = [
+        # NOTE: 閾値が高いものから並べる
+        config["GRAPH"]["VALVE"]["THRESHOLD"]["FULL"],
+        config["GRAPH"]["VALVE"]["THRESHOLD"]["INTERM"],
+    ]
+    period = config["GRAPH"]["PARAM"]["PERIOD"]
 
     logging.info(
         "Valve on period = {range_list}".format(
             range_list=json.dumps(
                 get_equip_mode_period(
-                    config["INFLUXDB"], measure, hostname, field, threshold, period
+                    db_config, measure, hostname, param, threshold, period
                 ),
                 indent=2,
                 default=str,
@@ -427,6 +439,7 @@ if __name__ == "__main__":
         )
     )
 
+    print(get_today_sum(db_config, measure, hostname, param))
     # logging.info(
     #     "Amount of cooling water used today = {water:0f} L".format(
     #         water=get_today_sum(config["INFLUXDB"], measure, hostname, field)
