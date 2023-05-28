@@ -26,9 +26,8 @@ from(bucket: "{bucket}")
     |> filter(fn:(r) => r._measurement == "{measure}")
     |> filter(fn: (r) => r.hostname == "{hostname}")
     |> filter(fn: (r) => r["_field"] == "{field}")
-    |> aggregateWindow(every: {window}m, fn: mean, createEmpty: {create_empty})
+    |> aggregateWindow(every: {window}m, offset:-{offset}s, fn: mean, createEmpty: {create_empty})
     |> fill(usePrevious: true)
-    |> timedMovingAverage(every: {every}m, period: {window}m)
 """
 
 FLUX_SUM_QUERY = """
@@ -67,6 +66,8 @@ def fetch_data_impl(
             period=period,
             every=every,
             window=window,
+            # NOTE: 半分オフセットさせて，window 区間中央のタイミングの値とする
+            offset=int(window * 60 / 2),
             create_empty=str(create_empty).lower(),
         )
         if last:
@@ -233,10 +234,10 @@ def get_equip_mode_period(
     measure,
     hostname,
     field,
-    threshold,
+    threshold_list,
     period="30h",
-    every_min=1,
-    window_min=3,
+    every_min=10,
+    window_min=10,
     create_empty=True,
 ):
     logging.info(
@@ -248,7 +249,9 @@ def get_equip_mode_period(
             type=measure,
             host=hostname,
             field=field,
-            threshold=threshold,
+            threshold="[{list_str}]".format(
+                list_str=",".join(map(lambda v: "{:.1f}".format(v), threshold_list))
+            ),
             period=period,
             every=every_min,
             window=window_min,
@@ -274,60 +277,55 @@ def get_equip_mode_period(
 
         # NOTE: 常時冷却と間欠冷却の期間を求める
         on_range = []
-        state = "IDLE"
+        state = -1
         start_time = None
+        prev_time = None
         localtime_offset = datetime.timedelta(hours=9)
 
         for record in table_list[0].records:
             # NOTE: aggregateWindow(createEmpty: true) と fill(usePrevious: true) の組み合わせ
             # だとタイミングによって，先頭に None が入る
             if record.get_value() is None:
+                logging.debug("DELETE")
                 continue
 
-            if record.get_value() > threshold["FULL"]:
-                if state != "FULL":
-                    if state == "INTERM":
-                        on_range.append(
-                            [
-                                start_time + localtime_offset,
-                                record.get_time() + localtime_offset,
-                                False,
-                            ]
-                        )
-                    state = "FULL"
-                    start_time = record.get_time()
-            elif record.get_value() > threshold["INTERM"]:
-                if state != "INTERM":
-                    if state == "FULL":
-                        on_range.append(
-                            [
-                                start_time + localtime_offset,
-                                record.get_time() + localtime_offset,
-                                True,
-                            ]
-                        )
-                    state = "INTERM"
-                    start_time = record.get_time()
-            else:
-                if state != "IDLE":
-                    on_range.append(
-                        [
-                            start_time + localtime_offset,
-                            record.get_time() + localtime_offset,
-                            state == "FULL",
-                        ]
-                    )
-                state = "IDLE"
+            is_idle = True
+            for i in range(len(threshold_list)):
+                if record.get_value() > threshold_list[i]:
+                    if state != i:
+                        if state != -1:
+                            on_range.append(
+                                [
+                                    start_time + localtime_offset,
+                                    prev_time + localtime_offset,
+                                    state,
+                                ]
+                            )
+                        state = i
+                        start_time = record.get_time()
+                    is_idle = False
+                    break
+            if is_idle and state != -1:
+                on_range.append(
+                    [
+                        start_time + localtime_offset,
+                        prev_time + localtime_offset,
+                        state,
+                    ]
+                )
+                state = -1
+                start_time = record.get_time()
 
-        if state != "IDLE":
+            prev_time = record.get_time()
+
+        if state != -1:
             on_range.append(
                 [
                     start_time + localtime_offset,
                     table_list[0].records[-1].get_time() + localtime_offset,
-                    state == "FULL",
+                    state,
                 ]
             )
-
         return on_range
     except:
         logging.warning(traceback.format_exc())

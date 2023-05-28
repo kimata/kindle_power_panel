@@ -210,7 +210,10 @@ def draw_sensor_graph(graph_config, db_config, font_config):
         graph_config["VALVE"]["TYPE"],
         graph_config["VALVE"]["HOST"],
         graph_config["VALVE"]["PARAM"],
-        graph_config["VALVE"]["THRESHOLD"],
+        [
+            graph_config["VALVE"]["THRESHOLD"]["FULL"],
+            graph_config["VALVE"]["THRESHOLD"]["INTERM"],
+        ],
         graph_config["PARAM"]["PERIOD"],
     )
 
