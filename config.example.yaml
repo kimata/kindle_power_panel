@@ -20,7 +20,7 @@ USAGE:
     PARAM: power
     THRESHOLD:
       WAKE: 40
-      WORK: 60
+      WORK: 100
 
 GRAPH:
   WIDTH: 1072
