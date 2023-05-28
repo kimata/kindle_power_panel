@@ -158,7 +158,7 @@ def plot_item(
     if vspan_list is not None:
         for vspan in vspan_list:
             ax.axvspan(
-                vspan[0], vspan[1], color="#000000", alpha=0.16 if vspan[2] else 0.07
+                vspan[0], vspan[1], color="#000000", alpha=[0.16, 0.07][vspan[2]]
             )
 
     draw_grid(ax, face_map)
@@ -211,6 +211,7 @@ def draw_sensor_graph(graph_config, db_config, font_config):
         graph_config["VALVE"]["HOST"],
         graph_config["VALVE"]["PARAM"],
         [
+            # NOTE: 閾値が高いものから並べる
             graph_config["VALVE"]["THRESHOLD"]["FULL"],
             graph_config["VALVE"]["THRESHOLD"]["INTERM"],
         ],
