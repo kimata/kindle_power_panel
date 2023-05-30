@@ -56,7 +56,7 @@ GRAPH:
       ICON: AIRCON
 
   VALVE:
-    HOST: rasp-cooler
+    HOST: rasp-cooler-1
     TYPE: sensor.rasp
     PARAM: flow
     THRESHOLD:
