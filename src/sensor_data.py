@@ -41,6 +41,7 @@ from(bucket: "{bucket}")
     |> filter(fn: (r) => r.hostname == "{hostname}")
     |> filter(fn: (r) => r["_field"] == "{field}")
     |> aggregateWindow(every: {every}m, offset:-{every}m, fn: mean, createEmpty: {create_empty})
+    |> filter(fn: (r) => exists r._value)
     |> fill(usePrevious: true)
     |> reduce(
         fn: (r, accumulator) => ({{sum: r._value + accumulator.sum, count: accumulator.count + 1}}),
@@ -140,7 +141,11 @@ def fetch_data(
                 # NOTE: aggregateWindow(createEmpty: true) と fill(usePrevious: true) の組み合わせ
                 # だとタイミングによって，先頭に None が入る
                 if record.get_value() is None:
-                    logging.debug("DELETE")
+                    logging.debug(
+                        "DELETE {datetime}".format(
+                            datetime=record.get_time() + localtime_offset
+                        )
+                    )
                     continue
 
                 data.append(record.get_value())
@@ -290,7 +295,11 @@ def get_equip_mode_period(
             # NOTE: aggregateWindow(createEmpty: true) と fill(usePrevious: true) の組み合わせ
             # だとタイミングによって，先頭に None が入る
             if record.get_value() is None:
-                logging.debug("DELETE")
+                logging.debug(
+                    "DELETE {datetime}".format(
+                        datetime=record.get_time() + localtime_offset
+                    )
+                )
                 continue
 
             is_idle = True
@@ -439,9 +448,8 @@ if __name__ == "__main__":
         )
     )
 
-    print(get_today_sum(db_config, measure, hostname, param))
-    # logging.info(
-    #     "Amount of cooling water used today = {water:0f} L".format(
-    #         water=get_today_sum(config["INFLUXDB"], measure, hostname, field)
-    #     )
-    # )
+    logging.info(
+        "Amount of cooling water used today = {water:.2f} L".format(
+            water=get_today_sum(db_config, measure, hostname, param)
+        )
+    )
